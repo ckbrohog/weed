@@ -13,28 +13,6 @@
 
   <!-- CSS for smoke animation -->
   <style>
-    <style>
-  #logo {
-    max-width: 400px;
-    display: block;
-    margin: 0 auto 2rem auto;
-  }
-
-  .smoke {
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.6);
-    animation: smokeAnimation 3s forwards;
-    z-index: 100;
-  }
-
-  @keyframes smokeAnimation {
-    ...
-  }
-</style>
-
     .smoke {
       position: absolute;
       width: 0;
@@ -61,12 +39,10 @@
     }
   </style>
 </head>
-<body class="text-white min-h-screen px-4 py-8" style="background: url('images/brick-wall.jpg') repeat; background-size: cover;">
-
+<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
   <!-- Header -->
-  <img id="logo" src="images/logo.png" alt="CannaTracker Logo" class="max-w-xs mx-auto mb-8" />
-
+  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">CannaTracker</h1>
 
   <!-- Leafly and Seedsman Buttons (moved to top) -->
   <div class="flex justify-center space-x-4 mb-4">
@@ -194,19 +170,19 @@
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
-        div.innerHTML = `
+        div.innerHTML = 
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
           <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
           <div class="flex space-x-1 mt-2">
             ${[1, 2, 3, 4, 5].map(i =>
-              `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
+              <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
             ).join('')}
           </div>
           <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
           <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
-        `;
+        ;
 
         // Rating stars
         const stars = div.querySelectorAll('.star');
@@ -281,7 +257,7 @@
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
+      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
       renderList();
     });
 
@@ -347,17 +323,17 @@
     document.getElementById('lookup-leafly').addEventListener('click', () => {
       const query = nameInput.value.trim();
       if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+      window.open(https://www.leafly.com/search?q=${encodeURIComponent(query)}, '_blank');
     });
 
     document.getElementById('lookup-seedsman').addEventListener('click', () => {
       const query = nameInput.value.trim();
       if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+      window.open(https://www.seedsman.com/search?query=${encodeURIComponent(query)}, '_blank');
     });
 
     document.getElementById('find-near-me').addEventListener('click', () => {
-      window.open(`https://www.google.com/maps/search/weed+dispensaries+near+me`, '_blank');
+      window.open(https://www.google.com/maps/search/weed+dispensaries+near+me, '_blank');
     });
   </script>
 </body>
