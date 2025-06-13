@@ -58,19 +58,12 @@
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
-  <!-- Edit Modal -->
-  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+  <!-- Details Modal -->
+  <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
     <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
-      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <textarea id="edit-description" rows="3" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
-      <textarea id="edit-notes" rows="3" placeholder="How did it make you feel?" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
-      <div class="flex space-x-1 mb-4" id="edit-stars"></div>
-      <div class="flex justify-end space-x-2">
-        <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
-        <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
-      </div>
+      <h3 class="text-xl font-bold text-green-300 mb-4" id="details-strain-name"></h3>
+      <p id="details-grow-knowledge" class="text-white"></p>
+      <button onclick="closeDetailsModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 mt-4">Close</button>
     </div>
   </div>
 
@@ -119,7 +112,9 @@
             ${[1, 2, 3, 4, 5].map(i =>
               `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
             ).join('')}
-          </div>`;
+          </div>
+          <button onclick="openDetailsModal('${data.name}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
+        `;
         div.addEventListener('click', () => openEditModal(id, data));
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
@@ -134,94 +129,38 @@
       });
     }
 
+    function openDetailsModal(strainName) {
+      const strainData = getStrainData(strainName);
+      document.getElementById('details-strain-name').textContent = strainData.name;
+      document.getElementById('details-grow-knowledge').textContent = strainData.growKnowledge;
+      document.getElementById('details-modal').classList.remove('hidden');
+      document.getElementById('details-modal').classList.add('flex');
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('details-modal').classList.add('hidden');
+      document.getElementById('details-modal').classList.remove('flex');
+    }
+
+    function getStrainData(name) {
+      const strainKnowledge = {
+        "Purple Haze": "Genetics: Sativa-dominant hybrid (Haze x Purple Thai), Flowering Time: 9 weeks, Yield: Indoor: 350–450g/m², Outdoor: up to 14 oz/plant, Height: Indoor: 90-100cm, Outdoor: up to 200 cm, Training Tips: Use topping and LST to control height.",
+        "Pineapple Bang": "Genetics: Hybrid (Pineapple Fruz x Wild Cherry), Climate: Thrives in warm, sunny environments, Training Tips: Utilize pruning and LST.",
+        "Sweet Tooth": "Genetics: Indica-dominant hybrid (70% Indica), Flowering Time: 8–9 weeks, Yield: Indoor: 400–500g/m², Outdoor: 450–550g/plant, Training Tips: Prune dense foliage.",
+        "Red Diesel": "Genetics: 50% Sativa, 50% Indica (Californian Orange x NYC Diesel), Flowering Time: 60–65 days, Yield: Indoor: up to 600g/m², Outdoor: up to 600g/plant, Climate: Prefers warm climates.",
+        "Witches Wedding": "Genetics: Limited Edition, Flowering Time: 8–9 weeks indoors, Yield: Indoor: up to 600g/m², Outdoor: 1000g/plant, Training Tips: Use topping and LST.",
+        "Amnesia Lemon": "Genetics: Sativa-dominant hybrid (Amnesia Haze x Lemon Skunk), Flowering Time: 60–65 days, Yield: Indoor: 550g/m², Outdoor: varies, Climate: Mediterranean-like conditions."
+      };
+      return {
+        name: name,
+        growKnowledge: strainKnowledge[name] || "No details available."
+      };
+    }
+    
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
       sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
       renderList();
-    });
-
-    searchBar.addEventListener('input', () => {
-      const val = searchBar.value.toLowerCase();
-      dropdown.innerHTML = '';
-      if (!val) return dropdown.classList.add('hidden');
-      const matches = strains.filter(({ data }) => data.name.toLowerCase().includes(val));
-      matches.forEach(({ data }) => {
-        const li = document.createElement('li');
-        li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
-        li.textContent = data.name;
-        li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
-        dropdown.appendChild(li);
-      });
-      dropdown.classList.toggle('hidden', matches.length === 0);
-    });
-
-    // Lookup Buttons
-    document.getElementById('lookup-leafly').addEventListener('click', () => {
-      const query = nameInput.value.trim();
-      if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
-    });
-
-    document.getElementById('lookup-seedsman').addEventListener('click', () => {
-      const query = nameInput.value.trim();
-      if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
-    });
-
-    // Dispensary Locator
-    document.getElementById('find-near-me').addEventListener('click', () => {
-      window.open(`https://www.google.com/maps/search/weed+dispensaries+near+me`, '_blank');
-    });
-
-    // Modal Logic
-    const editModal = document.getElementById('edit-modal');
-    const editName = document.getElementById('edit-name');
-    const editType = document.getElementById('edit-type');
-    const editDescription = document.getElementById('edit-description');
-    const editNotes = document.getElementById('edit-notes');
-    const editStars = document.getElementById('edit-stars');
-    let currentId = null;
-    let currentRating = 0;
-
-    function openEditModal(id, data) {
-      currentId = id;
-      editName.value = data.name;
-      editType.value = data.type;
-      editDescription.value = data.description;
-      editNotes.value = data.notes || '';
-      currentRating = data.rating || 0;
-      renderEditStars();
-      editModal.classList.remove('hidden');
-      editModal.classList.add('flex');
-    }
-
-    function closeEditModal() {
-      editModal.classList.add('hidden');
-      editModal.classList.remove('flex');
-    }
-
-    function renderEditStars() {
-      editStars.innerHTML = '';
-      for (let i = 1; i <= 5; i++) {
-        const star = document.createElement('span');
-        star.textContent = '★';
-        star.className = 'text-2xl cursor-pointer';
-        star.style.color = i <= currentRating ? 'gold' : 'black';
-        star.onclick = () => {
-          currentRating = i;
-          renderEditStars();
-        };
-        editStars.appendChild(star);
-      }
-    }
-
-    document.getElementById('save-edit').addEventListener('click', async () => {
-      const name = editName.value.trim();
-      const type = editType.value.trim();
-      const description = editDescription.value.trim();
-      const notes = editNotes.value.trim();
-      await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
-      closeEditModal();
     });
   </script>
 </body>
