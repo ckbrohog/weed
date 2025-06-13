@@ -1,49 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weed Strain Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weed Strain Tracker - Upgraded</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
+<body class="bg-gray-900 text-white min-h-screen px-4 py-8 transition-colors duration-500">
 
-  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
+  <div class="max-w-4xl mx-auto">
 
-  <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
-    <label class="block mb-2">Strain Name:</label>
-    <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
+    <header class="flex justify-between items-center mb-6">
+      <h1 class="text-4xl font-bold text-green-400">Weed Strain Tracker</h1>
+      <button id="toggle-dark" class="bg-green-500 px-4 py-2 rounded hover:bg-green-600 text-black font-semibold">Toggle Dark Mode</button>
+    </header>
 
-    <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
-    <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
+    <!-- Search & Sort -->
+    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 mb-6">
+      <input type="search" id="search-input" placeholder="Search strains..." class="flex-grow p-2 rounded bg-gray-700 text-white mb-4 md:mb-0" />
+      <select id="sort-select" class="p-2 rounded bg-gray-700 text-white w-48">
+        <option value="name">Sort by Name (A-Z)</option>
+        <option value="rating">Sort by Rating (High to Low)</option>
+        <option value="type">Sort by Type (A-Z)</option>
+        <option value="dateAdded">Sort by Date Added (Newest)</option>
+      </select>
+    </div>
 
-    <label class="block mb-2">Description:</label>
-    <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="4"></textarea>
+    <!-- Add Strain Form -->
+    <form id="strain-form" class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+      <label class="block mb-2">Strain Name:</label>
+      <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
 
-    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
-      Add Strain
-    </button>
-  </form>
+      <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
+      <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
 
-  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
-    <div id="strain-list" class="space-y-4">
-      <!-- Strains go here -->
+      <label class="block mb-2">Description:</label>
+      <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="3"></textarea>
+
+      <label class="block mb-2">Effects / Tags (comma separated):</label>
+      <input type="text" id="tags" placeholder="E.g. Relaxing, Euphoric, Sleepy" class="w-full p-2 rounded bg-gray-700 mb-4" />
+
+      <label class="block mb-2">Notes:</label>
+      <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Personal notes..."></textarea>
+
+      <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
+        Add Strain
+      </button>
+    </form>
+
+    <!-- Strain List -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
+      <div id="strain-list" class="space-y-4 max-h-[500px] overflow-y-auto">
+        <!-- Strains will appear here -->
+      </div>
     </div>
   </div>
 
   <!-- Edit Modal -->
   <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
-    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-auto">
       <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
+
+      <label class="block mb-1">Name:</label>
       <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+
+      <label class="block mb-1">Type:</label>
       <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <textarea id="edit-description" rows="4" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
-      <div class="flex space-x-1 mb-4" id="edit-stars">
-        <!-- Stars will be added here -->
+
+      <label class="block mb-1">Description:</label>
+      <textarea id="edit-description" rows="3" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+
+      <label class="block mb-1">Effects / Tags (comma separated):</label>
+      <input id="edit-tags" class="w-full p-2 rounded bg-gray-700 mb-4" placeholder="Relaxing, Euphoric, Sleepy" />
+
+      <label class="block mb-1">Notes:</label>
+      <textarea id="edit-notes" rows="2" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+
+      <label class="block mb-1">Rating:</label>
+      <div class="flex space-x-1 mb-6" id="edit-stars">
+        <!-- Stars go here -->
       </div>
+
+      <div class="flex justify-between items-center text-sm text-gray-400 mb-4" id="edit-dates">
+        <!-- Created and updated dates -->
+      </div>
+
       <div class="flex justify-end space-x-2">
         <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
         <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
@@ -52,6 +96,7 @@
   </div>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -64,66 +109,211 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Elements
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const toggleDarkBtn = document.getElementById('toggle-dark');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value.trim();
-      const type = form.type.value.trim();
-      const description = form.description.value.trim();
-      if (!name || !type || !description) return;
-
-      await db.collection('strains').add({ name, type, description, rating: 0 });
-      form.reset();
-    });
-
-    db.collection('strains').orderBy('name').onSnapshot(snapshot => {
-      list.innerHTML = '';
-      snapshot.forEach(doc => {
-        const { name, type, description, rating = 0 } = doc.data();
-        const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition';
-        div.innerHTML = `
-          <h3 class="text-xl font-bold text-green-400">${name}</h3>
-          <p class="italic text-sm text-gray-300">${type}</p>
-          <p class="mt-2 text-white">${description}</p>
-          <div class="flex space-x-1 mt-2">
-            ${[1, 2, 3, 4, 5].map(i => `
-              <span class="star text-2xl cursor-pointer" data-doc="${doc.id}" data-rating="${i}">★</span>
-            `).join('')}
-          </div>
-        `;
-        const stars = div.querySelectorAll('.star');
-        stars.forEach(star => {
-          const r = parseInt(star.dataset.rating);
-          star.style.color = r <= rating ? 'gold' : 'black';
-          star.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await db.collection('strains').doc(doc.id).update({ rating: r });
-          });
-        });
-        div.onclick = () => openEditModal(doc.id, { name, type, description, rating });
-        list.appendChild(div);
-      });
-    });
-
-    // Edit modal logic
+    // Edit modal elements
     const editModal = document.getElementById('edit-modal');
     const editName = document.getElementById('edit-name');
     const editType = document.getElementById('edit-type');
     const editDescription = document.getElementById('edit-description');
+    const editTags = document.getElementById('edit-tags');
+    const editNotes = document.getElementById('edit-notes');
     const editStars = document.getElementById('edit-stars');
+    const editDates = document.getElementById('edit-dates');
+    const saveEditBtn = document.getElementById('save-edit');
+
     let currentId = null;
     let currentRating = 0;
 
-    function openEditModal(id, data) {
-      currentId = id;
-      editName.value = data.name;
-      editType.value = data.type;
-      editDescription.value = data.description;
-      currentRating = data.rating || 0;
+    // Dark mode toggle
+    let darkMode = true;
+    toggleDarkBtn.addEventListener('click', () => {
+      darkMode = !darkMode;
+      if(darkMode){
+        document.body.classList.replace('bg-gray-100', 'bg-gray-900');
+        document.body.classList.replace('text-black', 'text-white');
+      } else {
+        document.body.classList.replace('bg-gray-900', 'bg-gray-100');
+        document.body.classList.replace('text-white', 'text-black');
+      }
+    });
+
+    // Add strain
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = form.name.value.trim();
+      const type = form.type.value.trim();
+      const description = form.description.value.trim();
+      const tags = form.tags.value.trim().split(',').map(t => t.trim()).filter(t => t);
+      const notes = form.notes.value.trim();
+
+      if (!name || !type || !description) return;
+
+      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      try {
+        await db.collection('strains').add({
+          name,
+          type,
+          description,
+          tags,
+          notes,
+          rating: 0,
+          dateAdded: timestamp,
+          lastUpdated: timestamp
+        });
+
+        // Smoke animation
+        showSmokeAnimation();
+
+        form.reset();
+      } catch (error) {
+        alert("Error adding strain: " + error.message);
+      }
+    });
+
+    // Smoke animation function
+    function showSmokeAnimation() {
+      const smoke = document.createElement('div');
+      smoke.innerHTML = '💨'; // Smoke emoji
+      smoke.style.position = 'fixed';
+      smoke.style.left = '50%';
+      smoke.style.top = '50%';
+      smoke.style.fontSize = '4rem';
+      smoke.style.opacity = '1';
+      smoke.style.transform = 'translate(-50%, -50%)';
+      smoke.style.pointerEvents = 'none';
+      document.body.appendChild(smoke);
+
+      let opacity = 1;
+      let scale = 1;
+      const interval = setInterval(() => {
+        opacity -= 0.03;
+        scale += 0.02;
+        smoke.style.opacity = opacity;
+        smoke.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        if (opacity <= 0) {
+          clearInterval(interval);
+          smoke.remove();
+        }
+      }, 30);
+    }
+
+    // Listen to Firestore strains collection and render
+    let strainsData = [];
+    db.collection('strains').onSnapshot(snapshot => {
+      strainsData = [];
+      snapshot.forEach(doc => {
+        strainsData.push({ id: doc.id, ...doc.data() });
+      });
+      renderList();
+    });
+
+    // Render strain list with filter and sort
+    function renderList() {
+      const search = searchInput.value.toLowerCase();
+      let filtered = strainsData.filter(s => 
+        s.name.toLowerCase().includes(search) ||
+        s.type.toLowerCase().includes(search) ||
+        (s.description && s.description.toLowerCase().includes(search)) ||
+        (s.tags && s.tags.join(' ').toLowerCase().includes(search)) ||
+        (s.notes && s.notes.toLowerCase().includes(search))
+      );
+
+      // Sorting
+      switch(sortSelect.value){
+        case 'name':
+          filtered.sort((a,b) => a.name.localeCompare(b.name));
+          break;
+        case 'rating':
+          filtered.sort((a,b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'type':
+          filtered.sort((a,b) => a.type.localeCompare(b.type));
+          break;
+        case 'dateAdded':
+          filtered.sort((a,b) => {
+            const aTime = a.dateAdded?.toMillis ? a.dateAdded.toMillis() : 0;
+            const bTime = b.dateAdded?.toMillis ? b.dateAdded.toMillis() : 0;
+            return bTime - aTime;
+          });
+          break;
+      }
+
+      list.innerHTML = '';
+      filtered.forEach(strain => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition relative';
+
+        // Stars HTML
+        const starsHtml = [1,2,3,4,5].map(i => 
+          `<span class="star text-2xl cursor-pointer" data-id="${strain.id}" data-rating="${i}" style="color:${i <= (strain.rating||0) ? 'gold' : 'black'}">★</span>`
+        ).join('');
+
+        // Tags HTML
+        const tagsHtml = (strain.tags && strain.tags.length) ? strain.tags.map(t => `<span class="inline-block bg-green-600 text-black text-xs px-2 py-0.5 rounded mr-1">${t}</span>`).join(' ') : '';
+
+        // Dates formatting
+        const dateAdded = strain.dateAdded?.toDate ? strain.dateAdded.toDate().toLocaleDateString() : 'Unknown';
+        const lastUpdated = strain.lastUpdated?.toDate ? strain.lastUpdated.toDate().toLocaleDateString() : 'Unknown';
+
+        div.innerHTML = `
+          <button title="Delete strain" class="delete-btn absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg font-bold">×</button>
+          <h3 class="text-xl font-bold text-green-400">${strain.name}</h3>
+          <p class="italic text-sm text-gray-300">${strain.type}</p>
+          <p class="mt-2 text-white whitespace-pre-wrap">${strain.description}</p>
+          <div class="flex mt-2 space-x-1">${starsHtml}</div>
+          <div class="mt-2">${tagsHtml}</div>
+          <p class="mt-2 text-gray-400 text-xs italic">Notes: ${strain.notes || 'None'}</p>
+          <p class="mt-2 text-gray-400 text-xs italic">Added: ${dateAdded} | Last Updated: ${lastUpdated}</p>
+        `;
+
+        // Delete button listener
+        div.querySelector('.delete-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if(confirm(`Delete strain "${strain.name}"?`)){
+            await db.collection('strains').doc(strain.id).delete();
+          }
+        });
+
+        // Star click rating update
+        div.querySelectorAll('.star').forEach(star => {
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const rating = parseInt(star.dataset.rating);
+            await db.collection('strains').doc(strain.id).update({ rating, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+          });
+        });
+
+        // Click strain to open edit modal
+        div.addEventListener('click', () => openEditModal(strain));
+
+        list.appendChild(div);
+      });
+    }
+
+    // Edit modal functions
+    function openEditModal(strain) {
+      currentId = strain.id;
+      editName.value = strain.name || '';
+      editType.value = strain.type || '';
+      editDescription.value = strain.description || '';
+      editTags.value = (strain.tags || []).join(', ');
+      editNotes.value = strain.notes || '';
+      currentRating = strain.rating || 0;
+
       renderEditStars();
+
+      const dateAdded = strain.dateAdded?.toDate ? strain.dateAdded.toDate().toLocaleString() : 'Unknown';
+      const lastUpdated = strain.lastUpdated?.toDate ? strain.lastUpdated.toDate().toLocaleString() : 'Unknown';
+      editDates.textContent = `Added: ${dateAdded} | Last Updated: ${lastUpdated}`;
+
       editModal.classList.remove('hidden');
       editModal.classList.add('flex');
     }
@@ -131,30 +321,64 @@
     function closeEditModal() {
       editModal.classList.add('hidden');
       editModal.classList.remove('flex');
+      currentId = null;
+      currentRating = 0;
     }
 
+    // Render stars in edit modal
     function renderEditStars() {
       editStars.innerHTML = '';
-      for (let i = 1; i <= 5; i++) {
+      for(let i=1; i<=5; i++){
         const star = document.createElement('span');
         star.textContent = '★';
-        star.className = 'text-2xl cursor-pointer';
-        star.style.color = i <= currentRating ? 'gold' : 'black';
-        star.onclick = () => {
+        star.className = 'text-3xl cursor-pointer select-none';
+        star.style.color = (i <= currentRating) ? 'gold' : 'black';
+        star.addEventListener('click', () => {
           currentRating = i;
           renderEditStars();
-        };
+        });
         editStars.appendChild(star);
       }
     }
 
-    document.getElementById('save-edit').addEventListener('click', async () => {
+    saveEditBtn.addEventListener('click', async () => {
+      if (!currentId) return;
       const name = editName.value.trim();
       const type = editType.value.trim();
       const description = editDescription.value.trim();
-      await db.collection('strains').doc(currentId).update({ name, type, description, rating: currentRating });
-      closeEditModal();
+      const tags = editTags.value.trim().split(',').map(t => t.trim()).filter(t => t);
+      const notes = editNotes.value.trim();
+
+      if (!name || !type || !description) {
+        alert("Please fill in name, type, and description.");
+        return;
+      }
+
+      try {
+        await db.collection('strains').doc(currentId).update({
+          name,
+          type,
+          description,
+          tags,
+          notes,
+          rating: currentRating,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        closeEditModal();
+      } catch(err) {
+        alert("Error updating strain: " + err.message);
+      }
     });
+
+    // Close modal on click outside content
+    editModal.addEventListener('click', (e) => {
+      if (e.target === editModal) closeEditModal();
+    });
+
+    // Search & sort triggers
+    searchInput.addEventListener('input', renderList);
+    sortSelect.addEventListener('change', renderList);
+
   </script>
 
 </body>
