@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
+
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
@@ -26,8 +27,12 @@
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
-    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
-    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me</button>
+    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
+      Add Strain
+    </button>
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
+      📍 Find Dispensaries Near Me
+    </button>
   </form>
 
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -68,6 +73,7 @@
       messagingSenderId: "715010576158",
       appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -75,7 +81,6 @@
     const searchBar = document.getElementById('search-bar');
     const dropdown = document.getElementById('dropdown');
     const sortButton = document.getElementById('sort-button');
-    const nameInput = document.getElementById('name');
 
     let ascending = true;
     let strains = [];
@@ -89,7 +94,9 @@
     function renderList() {
       list.innerHTML = '';
       const sorted = strains.sort((a, b) =>
-        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
+        ascending
+          ? a.data.name.localeCompare(b.data.name)
+          : b.data.name.localeCompare(a.data.name)
       );
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
@@ -103,7 +110,8 @@
             ${[1, 2, 3, 4, 5].map(i =>
               <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
             ).join('')}
-          </div>;
+          </div>
+        ;
         div.addEventListener('click', () => openEditModal(id, data));
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
@@ -139,18 +147,6 @@
       dropdown.classList.toggle('hidden', matches.length === 0);
     });
 
-    document.getElementById('lookup-leafly').addEventListener('click', () => {
-      const query = nameInput.value.trim();
-      if (!query) return alert('Enter a strain name to look up.');
-      window.open(https://www.leafly.com/search?q=${encodeURIComponent(query)}, '_blank');
-    });
-    document.getElementById('lookup-seedsman').addEventListener('click', () => {
-      const query = nameInput.value.trim();
-      if (!query) return alert('Enter a strain name to look up.');
-      window.open(https://www.seedsman.com/search?query=${encodeURIComponent(query)}, '_blank');
-    });
-
-    // Edit modal logic
     const editModal = document.getElementById('edit-modal');
     const editName = document.getElementById('edit-name');
     const editType = document.getElementById('edit-type');
