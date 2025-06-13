@@ -12,14 +12,18 @@
 
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
-  <!-- Lookup Section -->
-  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg relative">
-    <label class="block mb-2 text-green-300">Search for a Strain:</label>
-    <input type="text" id="lookup-input" class="w-full p-2 rounded bg-gray-700 mb-2" placeholder="Start typing a strain..." autocomplete="off" />
-    <ul id="suggestions" class="absolute z-10 w-full bg-gray-700 text-white rounded shadow-lg max-h-48 overflow-y-auto hidden"></ul>
+  <!-- Strain Lookup -->
+  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg">
+    <label class="block mb-2 text-green-300">Search a Strain:</label>
+    <input type="text" id="lookup" class="w-full p-2 rounded bg-gray-700" placeholder="Try 'Blue Dream'" />
+    <div id="results" class="mt-4 hidden">
+      <p class="text-green-400 font-bold" id="result-name"></p>
+      <p class="italic text-gray-300" id="result-type"></p>
+      <p class="text-white mt-2" id="result-desc"></p>
+    </div>
   </div>
 
-  <!-- Add Strain Form -->
+  <!-- Add Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
@@ -35,16 +39,14 @@
     </button>
   </form>
 
-  <!-- Display Saved Strains -->
+  <!-- Saved List -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
-    <div id="strain-list" class="space-y-4">
-      <!-- Strain items will appear here -->
-    </div>
+    <div id="strain-list" class="space-y-4"></div>
   </div>
 
   <script>
-    // 🔥 Firebase Config
+    // 🔥 Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -57,11 +59,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // 💾 Saving strains
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
 
-    // 🔃 Real-time display
-    db.collection('strains').orderBy('name').onSnapshot((snapshot) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = form.name.value.trim();
+      const type = form.type.value.trim();
+      const description = form.description.value.trim();
+
+      try {
+        await db.collection('strains').add({ name, type, description });
+        form.reset();
+      } catch (err) {
+        alert("❌ Error saving strain: " + err.message);
+      }
+    });
+
+    db.collection('strains').orderBy('name').onSnapshot(snapshot => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
         const { name, type, description } = doc.data();
@@ -76,79 +92,44 @@
       });
     });
 
-    // ✅ Form submit to Firestore
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value;
-      const type = form.type.value;
-      const description = form.description.value;
-
-      await db.collection('strains').add({ name, type, description });
-      form.reset();
-    });
-
-    // 🔍 Simple autocomplete + autofill from predefined list
-    const strainData = {
+    // 🔍 Lookup from static list
+    const strains = {
       "Blue Dream": {
         type: "Hybrid",
-        description: "Blue Dream is a sativa-dominant hybrid known for its balanced effects."
+        description: "A sativa-dominant hybrid that balances full-body relaxation with gentle mental invigoration."
       },
       "OG Kush": {
         type: "Indica",
-        description: "OG Kush is a legendary strain known for its relaxing effects."
-      },
-      "Girl Scout Cookies": {
-        type: "Hybrid",
-        description: "GSC delivers full-body relaxation and euphoric effects."
+        description: "A legendary strain known for its heavy effects and earthy pine scent."
       },
       "Sour Diesel": {
         type: "Sativa",
-        description: "Sour Diesel is a fast-acting strain known for its energizing effects."
+        description: "A pungent sativa that gets you energized and clear-headed fast."
       },
-      "Gelato": {
+      "Girl Scout Cookies": {
         type: "Hybrid",
-        description: "Gelato has a sweet, dessert-like aroma with balanced effects."
+        description: "Also known as GSC, delivers euphoric relaxation with a sweet, earthy aroma."
       }
     };
 
-    const input = document.getElementById('lookup-input');
-    const suggestions = document.getElementById('suggestions');
+    const lookup = document.getElementById('lookup');
+    const results = document.getElementById('results');
+    const nameEl = document.getElementById('result-name');
+    const typeEl = document.getElementById('result-type');
+    const descEl = document.getElementById('result-desc');
 
-    input.addEventListener('input', () => {
-      const val = input.value.toLowerCase();
-      suggestions.innerHTML = '';
-      if (!val) {
-        suggestions.classList.add('hidden');
-        return;
-      }
+    lookup.addEventListener('input', () => {
+      const term = lookup.value.trim().toLowerCase();
+      const match = Object.keys(strains).find(s => s.toLowerCase().startsWith(term));
 
-      Object.keys(strainData).forEach(strain => {
-        if (strain.toLowerCase().includes(val)) {
-          const li = document.createElement('li');
-          li.className = 'p-2 hover:bg-green-500 cursor-pointer';
-          li.textContent = strain;
-          li.addEventListener('click', () => {
-            document.getElementById('name').value = strain;
-            document.getElementById('type').value = strainData[strain].type;
-            document.getElementById('description').value = strainData[strain].description;
-            suggestions.classList.add('hidden');
-            input.value = strain;
-          });
-          suggestions.appendChild(li);
-        }
-      });
-
-      if (suggestions.children.length > 0) {
-        suggestions.classList.remove('hidden');
+      if (match) {
+        const data = strains[match];
+        results.classList.remove('hidden');
+        nameEl.textContent = match;
+        typeEl.textContent = data.type;
+        descEl.textContent = data.description;
       } else {
-        suggestions.classList.add('hidden');
-      }
-    });
-
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !suggestions.contains(e.target)) {
-        suggestions.classList.add('hidden');
+        results.classList.add('hidden');
       }
     });
   </script>
