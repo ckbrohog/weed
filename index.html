@@ -10,17 +10,11 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
-  <!-- Smoke Animation CSS -->
+  <!-- Smoke animation -->
   <style>
     @keyframes puff {
-      0% {
-        transform: translateY(0) scale(1);
-        opacity: 0.6;
-      }
-      100% {
-        transform: translateY(-200px) scale(2);
-        opacity: 0;
-      }
+      0% { transform: translateY(0) scale(1); opacity: 0.6; }
+      100% { transform: translateY(-200px) scale(2); opacity: 0; }
     }
 
     .smoke {
@@ -46,6 +40,7 @@
 
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
+  <!-- Add Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
@@ -61,18 +56,32 @@
     </button>
   </form>
 
+  <!-- Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
     <div id="strain-list" class="space-y-4">
-      <!-- Strain items will appear here -->
+      <!-- Strains appear here -->
     </div>
   </div>
 
-  <!-- Smoke animation container -->
+  <!-- Smoke -->
   <div id="smoke-wrapper" class="smoke-wrapper"></div>
 
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+      <h2 class="text-xl font-bold text-green-400 mb-4">Edit Strain</h2>
+      <input type="text" id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <input type="text" id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <textarea id="edit-description" class="w-full p-2 rounded bg-gray-700 mb-4" rows="4"></textarea>
+      <div class="flex justify-end space-x-2">
+        <button id="cancel-edit" class="bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
+        <button id="save-edit" class="bg-green-500 hover:bg-green-600 text-black font-bold px-4 py-2 rounded">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -89,7 +98,15 @@
     const list = document.getElementById('strain-list');
     const smokeWrapper = document.getElementById('smoke-wrapper');
 
-    // Add animated smoke puffs
+    // Edit Modal Elements
+    const modal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const saveEditBtn = document.getElementById('save-edit');
+    const cancelEditBtn = document.getElementById('cancel-edit');
+    let currentDocId = null;
+
     function puffSmoke() {
       for (let i = 0; i < 5; i++) {
         const smoke = document.createElement('div');
@@ -97,14 +114,11 @@
         smoke.style.left = `${Math.random() * 200 - 100}px`;
         smoke.style.animationDelay = `${i * 0.15}s`;
         smokeWrapper.appendChild(smoke);
-
-        setTimeout(() => {
-          smoke.remove();
-        }, 2500);
+        setTimeout(() => smoke.remove(), 2500);
       }
     }
 
-    // Save strain to Firestore
+    // Submit form to Firestore
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
@@ -116,28 +130,53 @@
       try {
         await db.collection('strains').add({ name, type, description });
         form.reset();
-        puffSmoke(); // animate smoke on success
+        puffSmoke();
       } catch (error) {
-        alert("❌ Error saving strain: " + error.message);
+        alert("Error saving strain: " + error.message);
       }
     });
 
-    // Load strains on page load
+    // Load and display strains
     db.collection('strains').orderBy('name').onSnapshot(snapshot => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
         const { name, type, description } = doc.data();
         const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded';
+        div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition';
         div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${name}</h3>
           <p class="italic text-sm text-gray-300">${type}</p>
           <p class="mt-2 text-white">${description}</p>
         `;
+        div.addEventListener('click', () => {
+          currentDocId = doc.id;
+          editName.value = name;
+          editType.value = type;
+          editDescription.value = description;
+          modal.classList.remove('hidden');
+        });
         list.appendChild(div);
       });
     });
-  </script>
 
+    // Save edits
+    saveEditBtn.addEventListener('click', async () => {
+      if (!currentDocId) return;
+      try {
+        await db.collection('strains').doc(currentDocId).update({
+          name: editName.value.trim(),
+          type: editType.value.trim(),
+          description: editDescription.value.trim()
+        });
+        modal.classList.add('hidden');
+      } catch (err) {
+        alert("Error updating strain: " + err.message);
+      }
+    });
+
+    cancelEditBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+  </script>
 </body>
 </html>
