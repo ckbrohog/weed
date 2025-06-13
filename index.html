@@ -9,7 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
-
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
@@ -27,12 +26,8 @@
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
-    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
-      Add Strain
-    </button>
-    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
-      📍 Find Dispensaries Near Me
-    </button>
+    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me</button>
   </form>
 
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -48,7 +43,21 @@
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
-  <!-- Edit Modal remains unchanged -->
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
+      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <textarea id="edit-description" rows="3" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <textarea id="edit-notes" rows="3" placeholder="How did it make you feel?" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <div class="flex space-x-1 mb-4" id="edit-stars"></div>
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+        <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -59,7 +68,6 @@
       messagingSenderId: "715010576158",
       appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -67,13 +75,7 @@
     const searchBar = document.getElementById('search-bar');
     const dropdown = document.getElementById('dropdown');
     const sortButton = document.getElementById('sort-button');
-
-    const localStrains = [
-      "Blue Dream", "Sour Diesel", "OG Kush", "Girl Scout Cookies", "Granddaddy Purple",
-      "Pineapple Express", "White Widow", "Green Crack", "Jack Herer", "Purple Haze",
-      "AK-47", "Maui Wowie", "Northern Lights", "Strawberry Cough", "Skywalker OG",
-      "Durban Poison", "Gorilla Glue", "Lemon Haze", "Bubblegum", "Trainwreck"
-    ];
+    const nameInput = document.getElementById('name');
 
     let ascending = true;
     let strains = [];
@@ -87,9 +89,7 @@
     function renderList() {
       list.innerHTML = '';
       const sorted = strains.sort((a, b) =>
-        ascending
-          ? a.data.name.localeCompare(b.data.name)
-          : b.data.name.localeCompare(a.data.name)
+        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
       );
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
@@ -103,8 +103,7 @@
             ${[1, 2, 3, 4, 5].map(i =>
               `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
             ).join('')}
-          </div>
-        `;
+          </div>`;
         div.addEventListener('click', () => openEditModal(id, data));
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
@@ -129,24 +128,77 @@
       const val = searchBar.value.toLowerCase();
       dropdown.innerHTML = '';
       if (!val) return dropdown.classList.add('hidden');
-
-      const savedMatches = strains.map(s => s.data.name).filter(name => name.toLowerCase().includes(val));
-      const allSuggestions = [...new Set([...localStrains, ...savedMatches])]
-        .filter(name => name.toLowerCase().includes(val))
-        .slice(0, 20);
-
-      allSuggestions.forEach(name => {
+      const matches = strains.filter(({ data }) => data.name.toLowerCase().includes(val));
+      matches.forEach(({ data }) => {
         const li = document.createElement('li');
         li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
-        li.textContent = name;
-        li.onclick = () => {
-          window.open(`/notepad.html?strain=${encodeURIComponent(name)}`, '_blank');
-          dropdown.classList.add('hidden');
-        };
+        li.textContent = data.name;
+        li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
         dropdown.appendChild(li);
       });
+      dropdown.classList.toggle('hidden', matches.length === 0);
+    });
 
-      dropdown.classList.toggle('hidden', allSuggestions.length === 0);
+    document.getElementById('lookup-leafly').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    });
+    document.getElementById('lookup-seedsman').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    // Edit modal logic
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editNotes = document.getElementById('edit-notes');
+    const editStars = document.getElementById('edit-stars');
+    let currentId = null;
+    let currentRating = 0;
+
+    function openEditModal(id, data) {
+      currentId = id;
+      editName.value = data.name;
+      editType.value = data.type;
+      editDescription.value = data.description;
+      editNotes.value = data.notes || '';
+      currentRating = data.rating || 0;
+      renderEditStars();
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+
+    function renderEditStars() {
+      editStars.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.className = 'text-2xl cursor-pointer';
+        star.style.color = i <= currentRating ? 'gold' : 'black';
+        star.onclick = () => {
+          currentRating = i;
+          renderEditStars();
+        };
+        editStars.appendChild(star);
+      }
+    }
+
+    document.getElementById('save-edit').addEventListener('click', async () => {
+      const name = editName.value.trim();
+      const type = editType.value.trim();
+      const description = editDescription.value.trim();
+      const notes = editNotes.value.trim();
+      await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
+      closeEditModal();
     });
   </script>
 </body>
