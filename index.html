@@ -58,6 +58,15 @@
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
+  <!-- Details Modal -->
+  <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4" id="details-strain-name"></h3>
+      <p id="details-grow-knowledge" class="text-white"></p>
+      <button onclick="closeDetailsModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 mt-4">Close</button>
+    </div>
+  </div>
+
   <!-- Notes Modal -->
   <div id="notes-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
     <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
@@ -88,6 +97,9 @@
     const nameInput = document.getElementById('name');
     const notesModal = document.getElementById('notes-modal');
     const notesTextarea = document.getElementById('notes-textarea');
+    const detailsModal = document.getElementById('details-modal');
+    const detailsStrainName = document.getElementById('details-strain-name');
+    const detailsGrowKnowledge = document.getElementById('details-grow-knowledge');
     let ascending = true;
     let strains = [];
 
@@ -115,7 +127,8 @@
               `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
             ).join('')}
           </div>
-          <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Add Notes</button>
+          <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
+          <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
         `;
 
         // Rating stars
@@ -131,6 +144,18 @@
 
         list.appendChild(div);
       });
+    }
+
+    function openDetailsModal(strainName, strainId) {
+      detailsStrainName.textContent = strainName;
+      detailsGrowKnowledge.textContent = getStrainData(strainName).growKnowledge;
+      detailsModal.classList.remove('hidden');
+      detailsModal.classList.add('flex');
+    }
+
+    function closeDetailsModal() {
+      detailsModal.classList.add('hidden');
+      detailsModal.classList.remove('flex');
     }
 
     function openNotesModal(strainName, strainId) {
@@ -155,6 +180,21 @@
       } else {
         alert("Please enter some notes.");
       }
+    }
+
+    function getStrainData(name) {
+      const strainKnowledge = {
+        "Purple Haze": "Genetics: Sativa-dominant hybrid (Haze x Purple Thai), Flowering Time: 9 weeks, Yield: Indoor: 350–450g/m², Outdoor: up to 14 oz/plant, Height: Indoor: 90-100cm, Outdoor: up to 200 cm, Training Tips: Use topping and LST to control height.",
+        "Pineapple Bang": "Genetics: Hybrid (Pineapple Fruz x Wild Cherry), Climate: Thrives in warm, sunny environments, Training Tips: Utilize pruning and LST.",
+        "Sweet Tooth": "Genetics: Indica-dominant hybrid (70% Indica), Flowering Time: 8–9 weeks, Yield: Indoor: 400–500g/m², Outdoor: 450–550g/plant, Training Tips: Prune dense foliage.",
+        "Red Diesel": "Genetics: 50% Sativa, 50% Indica (Californian Orange x NYC Diesel), Flowering Time: 60–65 days, Yield: Indoor: up to 600g/m², Outdoor: up to 600g/plant, Climate: Prefers warm climates.",
+        "Witches Wedding": "Genetics: Limited Edition, Flowering Time: 8–9 weeks indoors, Yield: Indoor: up to 600g/m², Outdoor: 1000g/plant, Training Tips: Use topping and LST.",
+        "Amnesia Lemon": "Genetics: Sativa-dominant hybrid (Amnesia Haze x Lemon Skunk), Flowering Time: 60–65 days, Yield: Indoor: 550g/m², Outdoor: varies, Climate: Mediterranean-like conditions."
+      };
+      return {
+        name: name,
+        growKnowledge: strainKnowledge[name] || "No details available."
+      };
     }
 
     sortButton.addEventListener('click', () => {
