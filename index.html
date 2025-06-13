@@ -42,24 +42,23 @@
     </button>
   </form>
 
-  <!-- Filter by Type -->
+  <!-- Filter and Sort Options -->
   <div class="flex justify-between items-center mt-6 mb-4">
-    <label for="filter-type" class="text-sm text-gray-300">Filter by Type:</label>
-    <select id="filter-type" class="bg-gray-700 text-white rounded p-2">
-      <option value="">All</option>
-      <option value="Sativa">Sativa</option>
-      <option value="Indica">Indica</option>
-      <option value="Hybrid">Hybrid</option>
-    </select>
+    <div class="flex space-x-2">
+      <label for="filter-type" class="text-sm text-gray-300">Filter by Type:</label>
+      <select id="filter-type" class="bg-gray-700 text-white rounded p-2">
+        <option value="">All</option>
+        <option value="Sativa">Sativa</option>
+        <option value="Indica">Indica</option>
+        <option value="Hybrid">Hybrid</option>
+      </select>
+    </div>
+
+    <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
   </div>
 
   <!-- Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-semibold text-green-300">Saved Strains</h2>
-      <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
-    </div>
-
     <div class="relative mb-4">
       <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
       <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
