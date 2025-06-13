@@ -777,20 +777,31 @@
     });
 
     // Search dropdown
-    searchBar.addEventListener('input', () => {
-      const val = searchBar.value.toLowerCase();
-      dropdown.innerHTML = '';
-      if (!val) return dropdown.classList.add('hidden');
-      const matches = strains.filter(s => s.data.name.toLowerCase().includes(val));
-      matches.forEach(({data}) => {
-        const li = document.createElement('li');
-        li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
-        li.textContent = data.name;
-        li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
-        dropdown.appendChild(li);
-      });
-      dropdown.classList.toggle('hidden', matches.length===0);
+  searchBar.addEventListener('input', () => {
+    const val = searchBar.value.toLowerCase();
+    dropdown.innerHTML = '';
+    if (!val) return dropdown.classList.add('hidden');
+
+    const matchesFromSaved = strains
+      .filter(({ data }) => data.name.toLowerCase().includes(val))
+      .map(({ data }) => data.name);
+
+    const matchesFromPredefined = predefinedStrains
+      .filter(name => name.toLowerCase().includes(val));
+
+    // Combine and deduplicate
+    const combinedMatches = [...new Set([...matchesFromSaved, ...matchesFromPredefined])];
+
+    combinedMatches.forEach(name => {
+      const li = document.createElement('li');
+      li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
+      li.textContent = name;
+      li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(name)}`, '_blank');
+      dropdown.appendChild(li);
     });
+
+    dropdown.classList.toggle('hidden', combinedMatches.length === 0);
+  });
 
     // Edit modal logic
     function openEditModal(id,data) {
