@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js" defer></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
   <!-- Lookup Section -->
-  <div class="max-w-md mx-auto mb-10 bg-gray-800 p-6 rounded-lg shadow-lg">
-    <label class="block mb-2">Look up a strain:</label>
-    <input type="text" id="lookup-input" class="w-full p-2 rounded bg-gray-700 mb-4" placeholder="e.g. Blue Dream" />
-    <button id="lookup-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold w-full py-2 rounded">
-      🔍 Lookup Strain Info
-    </button>
-    <div id="lookup-result" class="mt-4"></div>
+  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg">
+    <label class="block mb-2 text-green-300">Lookup Strain Info:</label>
+    <div class="flex gap-2 mb-4">
+      <input type="text" id="lookup-input" class="flex-1 p-2 rounded bg-gray-700" placeholder="e.g. Blue Dream" />
+      <button id="lookup-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded">
+        Lookup
+      </button>
+    </div>
+    <div id="lookup-result" class="text-sm text-white space-y-4"></div>
   </div>
 
   <!-- Add Strain Form -->
@@ -36,118 +36,111 @@
     <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="4"></textarea>
 
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
-      ➕ Add Strain
+      Add Strain
     </button>
   </form>
 
-  <!-- Saved Strains -->
+  <!-- Display Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
     <div id="strain-list" class="space-y-4">
-      <!-- Strain items go here -->
+      <!-- Strain items will appear here -->
     </div>
   </div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      // Firebase Config
-      const firebaseConfig = {
-        apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
-        authDomain: "weed-a53a5.firebaseapp.com",
-        projectId: "weed-a53a5",
-        storageBucket: "weed-a53a5.appspot.com",
-        messagingSenderId: "715010576158",
-        appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f",
-        measurementId: "G-JDZX4R9XM2"
-      };
+    // ✅ Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
+      authDomain: "weed-a53a5.firebaseapp.com",
+      projectId: "weed-a53a5",
+      storageBucket: "weed-a53a5.appspot.com",
+      messagingSenderId: "715010576158",
+      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f",
+      measurementId: "G-JDZX4R9XM2"
+    };
 
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-      const form = document.getElementById('strain-form');
-      const list = document.getElementById('strain-list');
+    const form = document.getElementById('strain-form');
+    const list = document.getElementById('strain-list');
 
-      // Add strain to Firestore
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = form.name.value;
-        const type = form.type.value;
-        const description = form.description.value;
+    // Add new strain to Firestore
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = form.name.value;
+      const type = form.type.value;
+      const description = form.description.value;
+      await db.collection('strains').add({ name, type, description });
+      form.reset();
+    });
 
-        await db.collection('strains').add({ name, type, description });
-        form.reset();
+    // Show strains in real-time
+    db.collection('strains').orderBy('name').onSnapshot((snapshot) => {
+      list.innerHTML = '';
+      snapshot.forEach(doc => {
+        const { name, type, description } = doc.data();
+        const div = document.createElement('div');
+        div.className = 'bg-gray-700 p-4 rounded';
+        div.innerHTML = `
+          <h3 class="text-xl font-bold text-green-400">${name}</h3>
+          <p class="italic text-sm text-gray-300">${type}</p>
+          <p class="mt-2 text-white">${description}</p>
+        `;
+        list.appendChild(div);
       });
+    });
 
-      // Load strains from Firestore
-      db.collection('strains').orderBy('name').onSnapshot((snapshot) => {
-        list.innerHTML = '';
-        snapshot.forEach(doc => {
-          const { name, type, description } = doc.data();
-          const searchUrl = `https://www.leafly.com/search?q=${encodeURIComponent(name)}`;
-          const imageUrl = `https://source.unsplash.com/featured/?cannabis,${encodeURIComponent(name)}`;
+    // Lookup strain info using proxy
+    document.getElementById('lookup-btn').addEventListener('click', async () => {
+      const input = document.getElementById('lookup-input').value.trim();
+      const result = document.getElementById('lookup-result');
+      result.innerHTML = "Searching...";
 
-          const div = document.createElement('div');
-          div.className = 'bg-gray-700 p-4 rounded';
-          div.innerHTML = `
-            <h3 class="text-xl font-bold text-green-400">${name}</h3>
-            <img src="${imageUrl}" alt="${name}" class="w-full rounded mb-2" />
-            <p class="italic text-sm text-gray-300">${type}</p>
-            <p class="mt-2 text-white">${description}</p>
-            <a href="${searchUrl}" target="_blank" class="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
-              View on Leafly 🔗
-            </a>
+      if (!input) {
+        result.innerHTML = "Please enter a strain name.";
+        return;
+      }
+
+      try {
+        const proxyUrl = "https://api.allorigins.win/get?url=";
+        const targetUrl = `https://www.cannabisreports.com/api/v1.0/strains/search/${encodeURIComponent(input)}`;
+        const res = await fetch(`${proxyUrl}${encodeURIComponent(targetUrl)}`);
+        const raw = await res.json();
+        const data = JSON.parse(raw.contents);
+
+        if (data.data && data.data.length > 0) {
+          const strain = data.data[0];
+
+          document.getElementById('name').value = strain.name;
+          document.getElementById('type').value = strain.race;
+          document.getElementById('description').value = strain.desc || "No description available.";
+
+          const imageThumb = `https://source.unsplash.com/featured/?cannabis,${encodeURIComponent(strain.name)}`;
+          const leaflySearch = `https://www.leafly.com/search?q=${encodeURIComponent(strain.name)}`;
+
+          result.innerHTML = `
+            <div class="bg-gray-700 p-4 rounded">
+              <h3 class="text-xl font-bold text-green-400">${strain.name}</h3>
+              <p class="italic text-sm text-gray-300">Type: ${strain.race}</p>
+              <p class="mt-2 mb-2">${strain.desc || 'No description available.'}</p>
+              <img src="${imageThumb}" alt="${strain.name}" class="w-full rounded mb-3" />
+              <a href="${leaflySearch}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded">
+                🔍 View on Leafly
+              </a>
+            </div>
           `;
-          list.appendChild(div);
-        });
-      });
-
-      // Strain lookup via Cannabis Reports
-      document.getElementById('lookup-btn').addEventListener('click', async () => {
-        const input = document.getElementById('lookup-input').value.trim();
-        const result = document.getElementById('lookup-result');
-        result.innerHTML = "Searching...";
-
-        if (!input) {
-          result.innerHTML = "Please enter a strain name.";
-          return;
+        } else {
+          const fallbackUrl = `https://www.leafly.com/search?q=${encodeURIComponent(input)}`;
+          result.innerHTML = `
+            <p>No info found. Try <a href="${fallbackUrl}" target="_blank" class="text-blue-400 underline">Leafly search</a>.</p>
+          `;
         }
-
-        try {
-          const res = await fetch(`https://www.cannabisreports.com/api/v1.0/strains/search/${encodeURIComponent(input)}`);
-          const data = await res.json();
-
-          if (data.data && data.data.length > 0) {
-            const strain = data.data[0];
-
-            document.getElementById('name').value = strain.name;
-            document.getElementById('type').value = strain.race;
-            document.getElementById('description').value = strain.desc || "No description available.";
-
-            const imageThumb = `https://source.unsplash.com/featured/?cannabis,${encodeURIComponent(strain.name)}`;
-            const leaflySearch = `https://www.leafly.com/search?q=${encodeURIComponent(strain.name)}`;
-
-            result.innerHTML = `
-              <div class="bg-gray-700 p-4 rounded">
-                <h3 class="text-xl font-bold text-green-400">${strain.name}</h3>
-                <p class="italic text-sm text-gray-300">Type: ${strain.race}</p>
-                <p class="mt-2 mb-2">${strain.desc || 'No description available.'}</p>
-                <img src="${imageThumb}" alt="${strain.name}" class="w-full rounded mb-3" />
-                <a href="${leaflySearch}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded">
-                  🔍 View on Leafly
-                </a>
-              </div>
-            `;
-          } else {
-            const fallbackUrl = `https://www.leafly.com/search?q=${encodeURIComponent(input)}`;
-            result.innerHTML = `
-              <p>No info found. Try <a href="${fallbackUrl}" target="_blank" class="text-blue-400 underline">Leafly search</a>.</p>
-            `;
-          }
-        } catch (err) {
-          result.innerHTML = "Error fetching strain info.";
-          console.error(err);
-        }
-      });
+      } catch (err) {
+        result.innerHTML = "Error fetching strain info.";
+        console.error(err);
+      }
     });
   </script>
 
