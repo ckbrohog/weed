@@ -41,12 +41,8 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
-<!-- Logo and Header -->
-<div class="flex flex-col items-center mb-8">
-  <img src="logo.png" alt="CannaTracker Logo" class="w-40 sm:w-48 md:w-56 mb-2">
-</div>
-
-
+  <!-- Header -->
+  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">CannaTracker</h1>
 
   <!-- Leafly and Seedsman Buttons (moved to top) -->
   <div class="flex justify-center space-x-4 mb-4">
@@ -174,20 +170,19 @@
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
-div.innerHTML = `
-  <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
-  <p class="italic text-sm text-gray-300">${data.type}</p>
-  <p class="mt-2 text-white">${data.description}</p>
-  <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
-  <div class="flex space-x-1 mt-2">
-    ${[1, 2, 3, 4, 5].map(i =>
-      `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
-    ).join('')}
-  </div>
-  <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
-  <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
-`;
-
+        div.innerHTML = 
+          <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+          <p class="italic text-sm text-gray-300">${data.type}</p>
+          <p class="mt-2 text-white">${data.description}</p>
+          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1, 2, 3, 4, 5].map(i =>
+              <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
+            ).join('')}
+          </div>
+          <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
+          <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
+        ;
 
         // Rating stars
         const stars = div.querySelectorAll('.star');
@@ -262,8 +257,7 @@ div.innerHTML = `
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
-
+      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
       renderList();
     });
 
