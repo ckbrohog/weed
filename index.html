@@ -13,15 +13,10 @@
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
   <!-- Lookup Section -->
-  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg">
-    <label class="block mb-2 text-green-300">Lookup Strain Info:</label>
-    <div class="flex gap-2 mb-4">
-      <input type="text" id="lookup-input" class="flex-1 p-2 rounded bg-gray-700" placeholder="e.g. Blue Dream" />
-      <button id="lookup-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded">
-        Lookup
-      </button>
-    </div>
-    <div id="lookup-result" class="text-sm text-white space-y-4"></div>
+  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg relative">
+    <label class="block mb-2 text-green-300">Search for a Strain:</label>
+    <input type="text" id="lookup-input" class="w-full p-2 rounded bg-gray-700 mb-2" placeholder="Start typing a strain..." autocomplete="off" />
+    <ul id="suggestions" class="absolute z-10 w-full bg-gray-700 text-white rounded shadow-lg max-h-48 overflow-y-auto hidden"></ul>
   </div>
 
   <!-- Add Strain Form -->
@@ -49,15 +44,14 @@
   </div>
 
   <script>
-    // ✅ Firebase config
+    // 🔥 Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
       projectId: "weed-a53a5",
       storageBucket: "weed-a53a5.appspot.com",
       messagingSenderId: "715010576158",
-      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f",
-      measurementId: "G-JDZX4R9XM2"
+      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -66,17 +60,7 @@
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
 
-    // Add new strain to Firestore
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value;
-      const type = form.type.value;
-      const description = form.description.value;
-      await db.collection('strains').add({ name, type, description });
-      form.reset();
-    });
-
-    // Show strains in real-time
+    // 🔃 Real-time display
     db.collection('strains').orderBy('name').onSnapshot((snapshot) => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
@@ -92,57 +76,81 @@
       });
     });
 
-    // Lookup strain info using proxy
-    document.getElementById('lookup-btn').addEventListener('click', async () => {
-      const input = document.getElementById('lookup-input').value.trim();
-      const result = document.getElementById('lookup-result');
-      result.innerHTML = "Searching...";
+    // ✅ Form submit to Firestore
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = form.name.value;
+      const type = form.type.value;
+      const description = form.description.value;
 
-      if (!input) {
-        result.innerHTML = "Please enter a strain name.";
+      await db.collection('strains').add({ name, type, description });
+      form.reset();
+    });
+
+    // 🔍 Simple autocomplete + autofill from predefined list
+    const strainData = {
+      "Blue Dream": {
+        type: "Hybrid",
+        description: "Blue Dream is a sativa-dominant hybrid known for its balanced effects."
+      },
+      "OG Kush": {
+        type: "Indica",
+        description: "OG Kush is a legendary strain known for its relaxing effects."
+      },
+      "Girl Scout Cookies": {
+        type: "Hybrid",
+        description: "GSC delivers full-body relaxation and euphoric effects."
+      },
+      "Sour Diesel": {
+        type: "Sativa",
+        description: "Sour Diesel is a fast-acting strain known for its energizing effects."
+      },
+      "Gelato": {
+        type: "Hybrid",
+        description: "Gelato has a sweet, dessert-like aroma with balanced effects."
+      }
+    };
+
+    const input = document.getElementById('lookup-input');
+    const suggestions = document.getElementById('suggestions');
+
+    input.addEventListener('input', () => {
+      const val = input.value.toLowerCase();
+      suggestions.innerHTML = '';
+      if (!val) {
+        suggestions.classList.add('hidden');
         return;
       }
 
-      try {
-        const proxyUrl = "https://api.allorigins.win/get?url=";
-        const targetUrl = `https://www.cannabisreports.com/api/v1.0/strains/search/${encodeURIComponent(input)}`;
-        const res = await fetch(`${proxyUrl}${encodeURIComponent(targetUrl)}`);
-        const raw = await res.json();
-        const data = JSON.parse(raw.contents);
-
-        if (data.data && data.data.length > 0) {
-          const strain = data.data[0];
-
-          document.getElementById('name').value = strain.name;
-          document.getElementById('type').value = strain.race;
-          document.getElementById('description').value = strain.desc || "No description available.";
-
-          const imageThumb = `https://source.unsplash.com/featured/?cannabis,${encodeURIComponent(strain.name)}`;
-          const leaflySearch = `https://www.leafly.com/search?q=${encodeURIComponent(strain.name)}`;
-
-          result.innerHTML = `
-            <div class="bg-gray-700 p-4 rounded">
-              <h3 class="text-xl font-bold text-green-400">${strain.name}</h3>
-              <p class="italic text-sm text-gray-300">Type: ${strain.race}</p>
-              <p class="mt-2 mb-2">${strain.desc || 'No description available.'}</p>
-              <img src="${imageThumb}" alt="${strain.name}" class="w-full rounded mb-3" />
-              <a href="${leaflySearch}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded">
-                🔍 View on Leafly
-              </a>
-            </div>
-          `;
-        } else {
-          const fallbackUrl = `https://www.leafly.com/search?q=${encodeURIComponent(input)}`;
-          result.innerHTML = `
-            <p>No info found. Try <a href="${fallbackUrl}" target="_blank" class="text-blue-400 underline">Leafly search</a>.</p>
-          `;
+      Object.keys(strainData).forEach(strain => {
+        if (strain.toLowerCase().includes(val)) {
+          const li = document.createElement('li');
+          li.className = 'p-2 hover:bg-green-500 cursor-pointer';
+          li.textContent = strain;
+          li.addEventListener('click', () => {
+            document.getElementById('name').value = strain;
+            document.getElementById('type').value = strainData[strain].type;
+            document.getElementById('description').value = strainData[strain].description;
+            suggestions.classList.add('hidden');
+            input.value = strain;
+          });
+          suggestions.appendChild(li);
         }
-      } catch (err) {
-        result.innerHTML = "Error fetching strain info.";
-        console.error(err);
+      });
+
+      if (suggestions.children.length > 0) {
+        suggestions.classList.remove('hidden');
+      } else {
+        suggestions.classList.add('hidden');
+      }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+        suggestions.classList.add('hidden');
       }
     });
   </script>
-
 </body>
 </html>
