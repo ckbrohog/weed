@@ -1,36 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <!-- Meta and Title -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
+
+  <!-- Tailwind and Firebase SDKs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
- <style>
-  @keyframes puff {
-    0% { transform: translateY(0) scale(1); opacity: 0.8; }
-    100% { transform: translateY(-120px) scale(2.5); opacity: 0; }
-  }
-
-  .animate-puff {
-    animation: puff 2.5s ease-out forwards;
-  }
-</style>
-
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
   <!-- Header -->
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
-  <!-- Add Strain Section -->
+  <!-- Add Strain Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
 
     <div class="flex items-center mb-4 space-x-2">
-      <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black">Leafly 🔍</button>
-      <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black">Seedsman 🔍</button>
+      <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Leafly 🔍</button>
+      <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Seedsman 🔍</button>
     </div>
 
     <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
@@ -43,20 +36,25 @@
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
-    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me</button>
+
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
+      📍 Find Dispensaries Near Me
+    </button>
   </form>
 
-  <!-- Saved Strains List + Sort + Search -->
+  <!-- Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-semibold text-green-300">Saved Strains</h2>
       <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
     </div>
+
     <div class="relative mb-4">
       <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
       <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
       <ul id="dropdown" class="absolute bg-gray-800 border border-gray-600 w-full mt-1 rounded hidden z-50 max-h-48 overflow-y-auto"></ul>
     </div>
+
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
@@ -76,9 +74,8 @@
     </div>
   </div>
 
-  <!-- Core JavaScript -->
+  <!-- JavaScript Logic -->
   <script>
-    // Firebase setup
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -90,67 +87,27 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // DOM elements
-    const nameInput = document.getElementById('name');
     const list = document.getElementById('strain-list');
     const searchBar = document.getElementById('search-bar');
     const dropdown = document.getElementById('dropdown');
     const sortButton = document.getElementById('sort-button');
-    const editModal = document.getElementById('edit-modal');
-    const editName = document.getElementById('edit-name');
-    const editType = document.getElementById('edit-type');
-    const editDescription = document.getElementById('edit-description');
-    const editNotes = document.getElementById('edit-notes');
-    const editStars = document.getElementById('edit-stars');
+    const nameInput = document.getElementById('name');
 
-    // State
-    let currentId = null;
-    let currentRating = 0;
     let ascending = true;
     let strains = [];
 
-    // Form submission
-    document.getElementById('strain-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const type = document.getElementById('type').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const notes = document.getElementById('notes').value.trim();
-      if (!name || !type || !description) return;
-      await db.collection('strains').add({ name, type, description, notes, rating: 0 });
-      triggerSmoke();
-
-      document.getElementById('strain-form').reset();
-    });
-
-    // Lookup buttons
-    document.getElementById('lookup-leafly').addEventListener('click', () => {
-      const q = nameInput.value.trim();
-      if (!q) return alert('Enter a strain name to lookup on Leafly.');
-      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(q)}`, '_blank');
-    });
-    document.getElementById('lookup-seedsman').addEventListener('click', () => {
-      const q = nameInput.value.trim();
-      if (!q) return alert('Enter a strain name to lookup on Seedsman.');
-      window.open(`https://www.seedsman.com/en/cannabis-seeds/${encodeURIComponent(q)}`, '_blank');
-    });
-    document.getElementById('find-near-me').addEventListener('click', () => {
-      window.open('https://www.google.com/maps/search/dispensaries+near+me', '_blank');
-    });
-
-    // Firestore listener
     db.collection('strains').onSnapshot(snapshot => {
-      strains = snapshot.docs.map(d => ({ id: d.id, data: d.data() }));
+      strains = [];
+      snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
       renderList();
     });
 
     function renderList() {
       list.innerHTML = '';
-      const sorted = strains.sort((a,b) => ascending
-        ? a.data.name.localeCompare(b.data.name)
-        : b.data.name.localeCompare(a.data.name)
+      const sorted = strains.sort((a, b) =>
+        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
       );
-      sorted.forEach(({id,data}) => {
+      sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
         div.innerHTML = `
@@ -159,16 +116,17 @@
           <p class="mt-2 text-white">${data.description}</p>
           <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
           <div class="flex space-x-1 mt-2">
-            ${[1,2,3,4,5].map(i => `
-              <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
-            `).join('')}
+            ${[1, 2, 3, 4, 5].map(i =>
+              `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
+            ).join('')}
           </div>`;
-        div.addEventListener('click', () => openEditModal(id,data));
-        div.querySelectorAll('.star').forEach(star => {
-          const r = +star.dataset.rating;
+        div.addEventListener('click', () => openEditModal(id, data));
+        const stars = div.querySelectorAll('.star');
+        stars.forEach(star => {
+          const r = parseInt(star.dataset.rating);
           star.style.color = r <= data.rating ? 'gold' : 'black';
-          star.addEventListener('click', async ev => {
-            ev.stopPropagation();
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
             await db.collection('strains').doc(id).update({ rating: r });
           });
         });
@@ -176,73 +134,95 @@
       });
     }
 
-    // Sort toggle
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = `Sort: ${ascending? 'A–Z':'Z–A'}`;
+      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
       renderList();
     });
 
-    // Search dropdown
     searchBar.addEventListener('input', () => {
       const val = searchBar.value.toLowerCase();
       dropdown.innerHTML = '';
       if (!val) return dropdown.classList.add('hidden');
-      const matches = strains.filter(s => s.data.name.toLowerCase().includes(val));
-      matches.forEach(({data}) => {
+      const matches = strains.filter(({ data }) => data.name.toLowerCase().includes(val));
+      matches.forEach(({ data }) => {
         const li = document.createElement('li');
         li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
         li.textContent = data.name;
         li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
         dropdown.appendChild(li);
       });
-      dropdown.classList.toggle('hidden', matches.length===0);
+      dropdown.classList.toggle('hidden', matches.length === 0);
     });
 
-    // Edit modal logic
-    function openEditModal(id,data) {
+    // Lookup Buttons
+    document.getElementById('lookup-leafly').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    document.getElementById('lookup-seedsman').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    // Dispensary Locator
+    document.getElementById('find-near-me').addEventListener('click', () => {
+      window.open(`https://www.google.com/maps/search/weed+dispensaries+near+me`, '_blank');
+    });
+
+    // Modal Logic
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editNotes = document.getElementById('edit-notes');
+    const editStars = document.getElementById('edit-stars');
+    let currentId = null;
+    let currentRating = 0;
+
+    function openEditModal(id, data) {
       currentId = id;
       editName.value = data.name;
       editType.value = data.type;
       editDescription.value = data.description;
-      editNotes.value = data.notes||'';
-      currentRating = data.rating||0;
+      editNotes.value = data.notes || '';
+      currentRating = data.rating || 0;
       renderEditStars();
       editModal.classList.remove('hidden');
       editModal.classList.add('flex');
     }
+
     function closeEditModal() {
       editModal.classList.add('hidden');
       editModal.classList.remove('flex');
     }
+
     function renderEditStars() {
       editStars.innerHTML = '';
-      for (let i=1;i<=5;i++) {
+      for (let i = 1; i <= 5; i++) {
         const star = document.createElement('span');
         star.textContent = '★';
         star.className = 'text-2xl cursor-pointer';
-        star.style.color = i<=currentRating ? 'gold':'black';
-        star.onclick = () => { currentRating=i; renderEditStars(); };
+        star.style.color = i <= currentRating ? 'gold' : 'black';
+        star.onclick = () => {
+          currentRating = i;
+          renderEditStars();
+        };
         editStars.appendChild(star);
       }
     }
+
     document.getElementById('save-edit').addEventListener('click', async () => {
-      const name=editName.value.trim(), type=editType.value.trim();
-      const desc=editDescription.value.trim(), notes=editNotes.value.trim();
-      await db.collection('strains').doc(currentId)
-        .update({ name, type, description: desc, notes, rating: currentRating });
+      const name = editName.value.trim();
+      const type = editType.value.trim();
+      const description = editDescription.value.trim();
+      const notes = editNotes.value.trim();
+      await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
       closeEditModal();
     });
-<!-- Smoke and Snoop Animation -->
-<div id="smoke-animation" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 hidden z-50">
-  <div class="relative w-24 h-24">
-    <div class="absolute bottom-0 left-1/2 w-3 h-8 bg-gray-300 rounded-sm -translate-x-1/2"></div> <!-- joint -->
-    <div id="smoke-cloud" class="absolute bottom-8 left-1/2 w-40 h-40 rounded-full bg-green-400 opacity-70 blur-lg animate-puff -translate-x-1/2"></div>
-  </div>
-</div>
-
-<!-- Snoop Dogg Popup -->
-<img id="snoop-popup" src="https://media.giphy.com/media/3orieW5gJrjDNr8DVm/giphy.gif"
-     alt="Snoop Dogg" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 opacity-0 transition-opacity duration-1000 z-50 pointer-events-none">
+  </script>
 </body>
 </html>
