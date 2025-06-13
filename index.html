@@ -5,9 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+
+  <!-- Smoke Animation CSS -->
+  <style>
+    @keyframes puff {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(-200px) scale(2);
+        opacity: 0;
+      }
+    }
+
+    .smoke {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 80%);
+      animation: puff 2.5s ease-out forwards;
+    }
+
+    .smoke-wrapper {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 50;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
@@ -35,8 +68,11 @@
     </div>
   </div>
 
+  <!-- Smoke animation container -->
+  <div id="smoke-wrapper" class="smoke-wrapper"></div>
+
   <script>
-    // ✅ Your Firebase config (fixed)
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -51,8 +87,24 @@
 
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
+    const smokeWrapper = document.getElementById('smoke-wrapper');
 
-    // ✅ Save strain to Firestore
+    // Add animated smoke puffs
+    function puffSmoke() {
+      for (let i = 0; i < 5; i++) {
+        const smoke = document.createElement('div');
+        smoke.classList.add('smoke');
+        smoke.style.left = `${Math.random() * 200 - 100}px`;
+        smoke.style.animationDelay = `${i * 0.15}s`;
+        smokeWrapper.appendChild(smoke);
+
+        setTimeout(() => {
+          smoke.remove();
+        }, 2500);
+      }
+    }
+
+    // Save strain to Firestore
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
@@ -64,12 +116,13 @@
       try {
         await db.collection('strains').add({ name, type, description });
         form.reset();
+        puffSmoke(); // animate smoke on success
       } catch (error) {
         alert("❌ Error saving strain: " + error.message);
       }
     });
 
-    // ✅ Load strains from Firestore on page load
+    // Load strains on page load
     db.collection('strains').orderBy('name').onSnapshot(snapshot => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
