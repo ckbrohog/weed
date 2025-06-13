@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CannaTracker</title>
+
+  <!-- Tailwind and Firebase SDKs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-storage-compat.js"></script>
+
+  <!-- CSS -->
   <style>
     .smoke {
       position: absolute;
@@ -18,6 +22,7 @@
       animation: smokeAnimation 3s forwards;
       z-index: 100;
     }
+
     @keyframes smokeAnimation {
       0% {
         width: 10px;
@@ -32,23 +37,23 @@
         transform: translateY(-200px) scale(2);
       }
     }
+
     .twirl {
-      animation: twirlGold 0.6s ease;
+      animation: twirlStar 0.5s ease-in-out;
     }
-    @keyframes twirlGold {
-      0% { transform: rotate(0deg) scale(1); color: black; }
-      50% { transform: rotate(180deg) scale(1.5); color: gold; }
-      100% { transform: rotate(360deg) scale(1); color: gold; }
+
+    @keyframes twirlStar {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(360deg) scale(1.3); }
+      100% { transform: rotate(0deg) scale(1); }
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
-  <!-- Dark Mode Toggle -->
-  <div class="absolute top-4 right-4">
-    <button id="dark-toggle" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-1 rounded">🌙 Dark Mode</button>
+<body class="bg-gray-900 text-white min-h-screen px-4 py-8 transition-colors" id="body">
+  <div class="flex justify-between items-center mb-4">
+    <h1 class="text-4xl font-bold text-green-400">CannaTracker</h1>
+    <button id="toggle-theme" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600">🌙</button>
   </div>
-
-  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">CannaTracker</h1>
 
   <div class="flex justify-center space-x-4 mb-4">
     <button id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-black font-semibold">Leafly 🔍</button>
@@ -57,7 +62,8 @@
 
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg" onsubmit="handleAddStrain(event)">
     <label class="block mb-2">Strain Name:</label>
-    <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
+    <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" list="strain-suggestions"/>
+    <datalist id="strain-suggestions"></datalist>
 
     <div class="flex space-x-4 mb-4">
       <button type="button" id="indica-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Indica</button>
@@ -72,10 +78,13 @@
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
     <label class="block mb-2">Upload Image:</label>
-    <input type="file" id="strain-image" accept="image/*" class="w-full mb-4 text-white" />
+    <input type="file" id="image-upload" class="w-full mb-4" accept="image/*" />
 
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
-    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me</button>
+
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
+      📍 Find Dispensaries Near Me
+    </button>
   </form>
 
   <div class="flex justify-between items-center mt-6 mb-4">
@@ -117,6 +126,13 @@
     </div>
   </div>
 
-  <!-- Scripts will be continued below -->
+  <script>
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+      document.body.classList.toggle('bg-gray-900');
+      document.body.classList.toggle('bg-white');
+      document.body.classList.toggle('text-white');
+      document.body.classList.toggle('text-black');
+    });
+  </script>
 </body>
 </html>
