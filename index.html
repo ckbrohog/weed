@@ -90,17 +90,27 @@
       );
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded';
+        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
         div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
           <p class="mt-2 text-sm text-gray-400 italic">${data.notes || ''}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1, 2, 3, 4, 5].map(i =>
+              `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
+            ).join('')}
+          </div>
         `;
-        div.onclick = () => {
-          const url = `https://growdiaries.com/search?q=${encodeURIComponent(data.name)}`;
-          window.open(url, '_blank');
-        };
+        const stars = div.querySelectorAll('.star');
+        stars.forEach(star => {
+          const r = parseInt(star.dataset.rating);
+          star.style.color = r <= data.rating ? 'gold' : 'black';
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await db.collection('strains').doc(id).update({ rating: r });
+          });
+        });
         list.appendChild(div);
       });
     }
@@ -135,7 +145,6 @@
       dropdown.classList.toggle('hidden', matches.length === 0);
     });
 
-    // Nearby dispensary finder
     document.getElementById('find-near-me').addEventListener('click', () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
