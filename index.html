@@ -48,6 +48,22 @@
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
+      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <textarea id="edit-description" rows="3" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <textarea id="edit-notes" rows="3" placeholder="How did it make you feel?" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <div class="flex space-x-1 mb-4" id="edit-stars"></div>
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+        <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
@@ -61,24 +77,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
-    const sortButton = document.getElementById('sort-button');
     const searchBar = document.getElementById('search-bar');
     const dropdown = document.getElementById('dropdown');
+    const sortButton = document.getElementById('sort-button');
 
     let ascending = true;
     let strains = [];
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value.trim();
-      const type = form.type.value.trim();
-      const description = form.description.value.trim();
-      const notes = form.notes.value.trim();
-      if (!name || !type || !description) return;
-      await db.collection('strains').add({ name, type, description, notes, rating: 0 });
-      form.reset();
+    db.collection('strains').onSnapshot(snapshot => {
+      strains = [];
+      snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
+      renderList();
     });
 
     function renderList() {
@@ -90,18 +100,19 @@
       );
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
+        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
         div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
-          <p class="mt-2 text-sm text-gray-400 italic">${data.notes || ''}</p>
+          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
           <div class="flex space-x-1 mt-2">
             ${[1, 2, 3, 4, 5].map(i =>
               `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
             ).join('')}
           </div>
         `;
+        div.addEventListener('click', () => openEditModal(id, data));
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
           const r = parseInt(star.dataset.rating);
@@ -114,12 +125,6 @@
         list.appendChild(div);
       });
     }
-
-    db.collection('strains').onSnapshot(snapshot => {
-      strains = [];
-      snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
-      renderList();
-    });
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
@@ -136,24 +141,60 @@
         const li = document.createElement('li');
         li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
         li.textContent = data.name;
-        li.onclick = () => {
-          const url = `https://growdiaries.com/search?q=${encodeURIComponent(data.name)}`;
-          window.open(url, '_blank');
-        };
+        li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
         dropdown.appendChild(li);
       });
       dropdown.classList.toggle('hidden', matches.length === 0);
     });
 
-    document.getElementById('find-near-me').addEventListener('click', () => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const url = `https://www.google.com/maps/search/weed+dispensary/@${latitude},${longitude},15z`;
-          window.open(url, '_blank');
-        },
-        () => alert('Unable to access location.')
-      );
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editNotes = document.getElementById('edit-notes');
+    const editStars = document.getElementById('edit-stars');
+    let currentId = null;
+    let currentRating = 0;
+
+    function openEditModal(id, data) {
+      currentId = id;
+      editName.value = data.name;
+      editType.value = data.type;
+      editDescription.value = data.description;
+      editNotes.value = data.notes || '';
+      currentRating = data.rating || 0;
+      renderEditStars();
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+
+    function renderEditStars() {
+      editStars.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.className = 'text-2xl cursor-pointer';
+        star.style.color = i <= currentRating ? 'gold' : 'black';
+        star.onclick = () => {
+          currentRating = i;
+          renderEditStars();
+        };
+        editStars.appendChild(star);
+      }
+    }
+
+    document.getElementById('save-edit').addEventListener('click', async () => {
+      const name = editName.value.trim();
+      const type = editType.value.trim();
+      const description = editDescription.value.trim();
+      const notes = editNotes.value.trim();
+      await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
+      closeEditModal();
     });
   </script>
 </body>
