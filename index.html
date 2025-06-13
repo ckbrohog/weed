@@ -1,204 +1,289 @@
-<!-- JUST HEAD PART SHOWN FOR LENGTH -->
-<!-- ...your head and form stay the same... -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CannaTracker</title>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
-    authDomain: "weed-a53a5.firebaseapp.com",
-    projectId: "weed-a53a5",
-    storageBucket: "weed-a53a5.appspot.com",
-    messagingSenderId: "715010576158",
-    appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
-  const list = document.getElementById('strain-list');
-  const searchBar = document.getElementById('search-bar');
-  const dropdown = document.getElementById('dropdown');
-  const sortButton = document.getElementById('sort-button');
-  const nameInput = document.getElementById('name');
-  const notesModal = document.getElementById('notes-modal');
-  const notesTextarea = document.getElementById('notes-textarea');
-  const detailsModal = document.getElementById('details-modal');
-  const detailsStrainName = document.getElementById('details-strain-name');
-  const detailsGrowKnowledge = document.getElementById('details-grow-knowledge');
-  const filterTypeSelect = document.getElementById('filter-type');
-  const indicaBtn = document.getElementById('indica-btn');
-  const sativaBtn = document.getElementById('sativa-btn');
-  const hybridBtn = document.getElementById('hybrid-btn');
-  let ascending = true;
-  let strains = [];
-  let selectedType = '';
+  <style>
+    .smoke {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.6);
+      animation: smokeAnimation 3s forwards;
+      z-index: 100;
+    }
 
-  db.collection('strains').onSnapshot(snapshot => {
-    strains = [];
-    snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
-    renderList();
-  });
+    @keyframes smokeAnimation {
+      0% {
+        width: 10px;
+        height: 10px;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        width: 50px;
+        height: 50px;
+        opacity: 0;
+        transform: translateY(-200px) scale(2);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
-  function renderList() {
-    list.innerHTML = '';
-    const filteredStrains = strains.filter(({ data }) => {
-      if (!selectedType) return true;
-      return data.type === selectedType;
+  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">CannaTracker</h1>
+
+  <div class="flex justify-center space-x-4 mb-4">
+    <button id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-black font-semibold">Leafly 🔍</button>
+    <button id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-black font-semibold">Seedsman 🔍</button>
+  </div>
+
+  <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg" onsubmit="handleAddStrain(event)">
+    <label class="block mb-2">Strain Name:</label>
+    <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
+
+    <div class="flex space-x-4 mb-4">
+      <button type="button" id="indica-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Indica</button>
+      <button type="button" id="sativa-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Sativa</button>
+      <button type="button" id="hybrid-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Hybrid</button>
+    </div>
+
+    <label class="block mb-2">Description:</label>
+    <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="3"></textarea>
+
+    <label class="block mb-2">Notes:</label>
+    <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
+
+    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
+
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
+      📍 Find Dispensaries Near Me
+    </button>
+  </form>
+
+  <div class="flex justify-between items-center mt-6 mb-4">
+    <div class="flex space-x-2">
+      <label for="filter-type" class="text-sm text-gray-300">Filter by Type:</label>
+      <select id="filter-type" class="bg-gray-700 text-white rounded p-2">
+        <option value="">All</option>
+        <option value="Sativa">Sativa</option>
+        <option value="Indica">Indica</option>
+        <option value="Hybrid">Hybrid</option>
+      </select>
+    </div>
+    <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
+  </div>
+
+  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
+    <div class="relative mb-4">
+      <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
+      <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
+      <ul id="dropdown" class="absolute bg-gray-800 border border-gray-600 w-full mt-1 rounded hidden z-50 max-h-48 overflow-y-auto"></ul>
+    </div>
+    <div id="strain-list" class="space-y-4"></div>
+  </div>
+
+  <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4" id="details-strain-name"></h3>
+      <p id="details-grow-knowledge" class="text-white"></p>
+      <button onclick="closeDetailsModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 mt-4">Close</button>
+    </div>
+  </div>
+
+  <div id="notes-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4" id="notes-strain-name"></h3>
+      <textarea id="notes-textarea" class="w-full p-2 rounded bg-gray-700 mb-4" rows="4" placeholder="Add your comments here..."></textarea>
+      <button id="save-notes" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save Notes</button>
+      <button onclick="closeNotesModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 mt-4">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
+      authDomain: "weed-a53a5.firebaseapp.com",
+      projectId: "weed-a53a5",
+      storageBucket: "weed-a53a5.appspot.com",
+      messagingSenderId: "715010576158",
+      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const list = document.getElementById('strain-list');
+    const searchBar = document.getElementById('search-bar');
+    const dropdown = document.getElementById('dropdown');
+    const sortButton = document.getElementById('sort-button');
+    const nameInput = document.getElementById('name');
+    const notesModal = document.getElementById('notes-modal');
+    const notesTextarea = document.getElementById('notes-textarea');
+    const detailsModal = document.getElementById('details-modal');
+    const detailsStrainName = document.getElementById('details-strain-name');
+    const detailsGrowKnowledge = document.getElementById('details-grow-knowledge');
+    const filterTypeSelect = document.getElementById('filter-type');
+    let ascending = true;
+    let strains = [];
+    let selectedType = '';
+
+    db.collection('strains').onSnapshot(snapshot => {
+      strains = [];
+      snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
+      renderList();
     });
 
-    const sorted = filteredStrains.sort((a, b) =>
-      ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
-    );
-
-    sorted.forEach(({ id, data }) => {
-      const div = document.createElement('div');
-      div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
-      div.innerHTML = `
-        <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
-        <p class="italic text-sm text-gray-300">${data.type}</p>
-        <p class="mt-2 text-white">${data.description}</p>
-        <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
-        <div class="flex space-x-1 mt-2">
-          ${[1, 2, 3, 4, 5].map(i =>
-            `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
-          ).join('')}
-        </div>
-        <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
-        <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
-      `;
-
-      const stars = div.querySelectorAll('.star');
-      stars.forEach(star => {
-        const r = parseInt(star.dataset.rating);
-        star.style.color = r <= data.rating ? 'gold' : 'black';
-        star.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await db.collection('strains').doc(id).update({ rating: r });
-        });
+    function renderList() {
+      list.innerHTML = '';
+      const filtered = strains.filter(({ data }) => {
+        if (!selectedType) return true;
+        return data.type === selectedType;
       });
 
-      list.appendChild(div);
-    });
-  }
+      const sorted = filtered.sort((a, b) =>
+        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
+      );
 
-  function openDetailsModal(strainName, strainId) {
-    detailsStrainName.textContent = strainName;
-    detailsGrowKnowledge.textContent = getStrainData(strainName).growKnowledge;
-    detailsModal.classList.remove('hidden');
-    detailsModal.classList.add('flex');
-  }
-
-  function closeDetailsModal() {
-    detailsModal.classList.add('hidden');
-    detailsModal.classList.remove('flex');
-  }
-
-  function openNotesModal(strainName, strainId) {
-    document.getElementById('notes-strain-name').textContent = strainName;
-    notesModal.classList.remove('hidden');
-    notesModal.classList.add('flex');
-    notesTextarea.value = '';
-    document.getElementById('save-notes').onclick = () => saveNotes(strainId);
-  }
-
-  function closeNotesModal() {
-    notesModal.classList.add('hidden');
-    notesModal.classList.remove('flex');
-  }
-
-  async function saveNotes(strainId) {
-    const notes = notesTextarea.value.trim();
-    if (notes) {
-      await db.collection('strains').doc(strainId).update({ notes });
-      closeNotesModal();
-    } else {
-      alert("Please enter some notes.");
-    }
-  }
-
-  function getStrainData(name) {
-    const strainKnowledge = {
-      "Blue Sunset Sherbet": "...",
-      "Cookies Kush": "...",
-      "OG Kush": "...",
-      "Tangie": "...",
-      "Whale Breath": "..."
-    };
-    return {
-      name: name,
-      growKnowledge: strainKnowledge[name] || "No details available."
-    };
-  }
-
-  // Fix: Correct template string
-  sortButton.addEventListener('click', () => {
-    ascending = !ascending;
-    sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
-    renderList();
-  });
-
-  filterTypeSelect.addEventListener('change', () => {
-    selectedType = filterTypeSelect.value;
-    renderList();
-  });
-
-  document.querySelectorAll('.type-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
-      button.classList.add('bg-green-500');
-      selectedType = button.textContent;
-    });
-  });
-
-  function handleAddStrain(event) {
-    event.preventDefault();
-    const strainName = nameInput.value.trim();
-    const description = document.getElementById('description').value.trim();
-    const notes = document.getElementById('notes').value.trim();
-
-    if (!strainName || !description || !selectedType) {
-      alert("Please fill in all fields and select a strain type.");
-      return;
+      sorted.forEach(({ id, data }) => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
+        div.innerHTML = `
+          <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+          <p class="italic text-sm text-gray-300">${data.type}</p>
+          <p class="mt-2 text-white">${data.description}</p>
+          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1, 2, 3, 4, 5].map(i =>
+              `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
+            ).join('')}
+          </div>
+          <button onclick="openDetailsModal('${data.name}', '${id}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
+          <button onclick="openNotesModal('${data.name}', '${id}')" class="mt-2 bg-yellow-500 text-white py-1 px-3 rounded">Add Notes</button>
+        `;
+        const stars = div.querySelectorAll('.star');
+        stars.forEach(star => {
+          const r = parseInt(star.dataset.rating);
+          star.style.color = r <= data.rating ? 'gold' : 'black';
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await db.collection('strains').doc(id).update({ rating: r });
+          });
+        });
+        list.appendChild(div);
+      });
     }
 
-    db.collection('strains').add({
-      name: strainName,
-      type: selectedType,
-      description,
-      notes,
-      rating: 0
-    }).then(() => {
-      alert('Strain added successfully!');
-      triggerSmokeAnimation();
-      nameInput.value = '';
-      document.getElementById('description').value = '';
-      document.getElementById('notes').value = '';
-      selectedType = '';
-      document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
-    }).catch((error) => {
-      console.error("Error adding strain: ", error);
+    sortButton.addEventListener('click', () => {
+      ascending = !ascending;
+      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
+      renderList();
     });
-  }
 
-  function triggerSmokeAnimation() {
-    const smokeElement = document.createElement('div');
-    smokeElement.className = 'smoke';
-    document.body.appendChild(smokeElement);
-    setTimeout(() => smokeElement.remove(), 3000);
-  }
+    filterTypeSelect.addEventListener('change', () => {
+      selectedType = filterTypeSelect.value;
+      renderList();
+    });
 
-  // Fix: use backticks for URL strings
-  document.getElementById('lookup-leafly').addEventListener('click', () => {
-    const query = nameInput.value.trim();
-    if (!query) return alert('Enter a strain name to look up.');
-    window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
-  });
+    function openDetailsModal(strainName, strainId) {
+      detailsStrainName.textContent = strainName;
+      detailsGrowKnowledge.textContent = "No grow data added yet."; // Replace as needed
+      detailsModal.classList.remove('hidden');
+      detailsModal.classList.add('flex');
+    }
 
-  document.getElementById('lookup-seedsman').addEventListener('click', () => {
-    const query = nameInput.value.trim();
-    if (!query) return alert('Enter a strain name to look up.');
-    window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
-  });
+    function closeDetailsModal() {
+      detailsModal.classList.add('hidden');
+      detailsModal.classList.remove('flex');
+    }
 
-  document.getElementById('find-near-me').addEventListener('click', () => {
-    window.open('https://www.google.com/maps/search/weed+dispensaries+near+me', '_blank');
-  });
-</script>
+    function openNotesModal(strainName, strainId) {
+      document.getElementById('notes-strain-name').textContent = strainName;
+      notesModal.classList.remove('hidden');
+      notesModal.classList.add('flex');
+      notesTextarea.value = '';
+      document.getElementById('save-notes').onclick = () => saveNotes(strainId);
+    }
+
+    function closeNotesModal() {
+      notesModal.classList.add('hidden');
+      notesModal.classList.remove('flex');
+    }
+
+    async function saveNotes(strainId) {
+      const notes = notesTextarea.value.trim();
+      if (notes) {
+        await db.collection('strains').doc(strainId).update({ notes });
+        closeNotesModal();
+      } else {
+        alert("Please enter some notes.");
+      }
+    }
+
+    document.querySelectorAll('.type-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
+        button.classList.add('bg-green-500');
+        selectedType = button.textContent;
+      });
+    });
+
+    function handleAddStrain(event) {
+      event.preventDefault();
+      const strainName = nameInput.value.trim();
+      const description = document.getElementById('description').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+      if (!strainName || !description || !selectedType) {
+        alert("Please fill in all fields and select a strain type.");
+        return;
+      }
+      db.collection('strains').add({
+        name: strainName,
+        type: selectedType,
+        description,
+        notes,
+        rating: 0
+      }).then(() => {
+        alert('Strain added successfully!');
+        triggerSmokeAnimation();
+        nameInput.value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('notes').value = '';
+        selectedType = '';
+        document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
+      }).catch((error) => {
+        console.error("Error adding strain: ", error);
+      });
+    }
+
+    function triggerSmokeAnimation() {
+      const smokeElement = document.createElement('div');
+      smokeElement.className = 'smoke';
+      document.body.appendChild(smokeElement);
+      setTimeout(() => smokeElement.remove(), 3000);
+    }
+
+    document.getElementById('lookup-leafly').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    document.getElementById('lookup-seedsman').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    document.getElementById('find-near-me').addEventListener('click', () => {
+      window.open('https://www.google.com/maps/search/weed+dispensaries+near+me', '_blank');
+    });
+  </script>
+</body>
+</html>
