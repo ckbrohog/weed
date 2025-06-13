@@ -47,14 +47,15 @@
 
   <script>
     // 🔥 Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
-      authDomain: "weed-a53a5.firebaseapp.com",
-      projectId: "weed-a53a5",
-      storageBucket: "weed-a53a5.appspot.com",
-      messagingSenderId: "715010576158",
-      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
+  authDomain: "weed-a53a5.firebaseapp.com",
+  projectId: "weed-a53a5",
+  storageBucket: "weed-a53a5.appspot.com", // ✅ FIXED
+  messagingSenderId: "715010576158",
+  appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
+};
+
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
