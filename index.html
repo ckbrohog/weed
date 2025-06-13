@@ -5,25 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
-  <!-- Strain Lookup -->
-  <div class="bg-gray-800 max-w-md mx-auto p-6 mb-6 rounded-lg shadow-lg">
-    <label class="block mb-2 text-green-300">Search a Strain:</label>
-    <input type="text" id="lookup" class="w-full p-2 rounded bg-gray-700" placeholder="Try 'Blue Dream'" />
-    <div id="results" class="mt-4 hidden">
-      <p class="text-green-400 font-bold" id="result-name"></p>
-      <p class="italic text-gray-300" id="result-type"></p>
-      <p class="text-white mt-2" id="result-desc"></p>
-    </div>
-  </div>
-
-  <!-- Add Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
@@ -39,45 +28,48 @@
     </button>
   </form>
 
-  <!-- Saved List -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
-    <div id="strain-list" class="space-y-4"></div>
+    <div id="strain-list" class="space-y-4">
+      <!-- Strain items will appear here -->
+    </div>
   </div>
 
   <script>
-    // 🔥 Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
-  authDomain: "weed-a53a5.firebaseapp.com",
-  projectId: "weed-a53a5",
-  storageBucket: "weed-a53a5.appspot.com", // ✅ FIXED
-  messagingSenderId: "715010576158",
-  appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
-};
-
+    // ✅ Your Firebase config (fixed)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
+      authDomain: "weed-a53a5.firebaseapp.com",
+      projectId: "weed-a53a5",
+      storageBucket: "weed-a53a5.appspot.com",
+      messagingSenderId: "715010576158",
+      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 💾 Saving strains
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
 
+    // ✅ Save strain to Firestore
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
       const type = form.type.value.trim();
       const description = form.description.value.trim();
 
+      if (!name || !type || !description) return;
+
       try {
         await db.collection('strains').add({ name, type, description });
         form.reset();
-      } catch (err) {
-        alert("❌ Error saving strain: " + err.message);
+      } catch (error) {
+        alert("❌ Error saving strain: " + error.message);
       }
     });
 
+    // ✅ Load strains from Firestore on page load
     db.collection('strains').orderBy('name').onSnapshot(snapshot => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
@@ -92,47 +84,7 @@ const firebaseConfig = {
         list.appendChild(div);
       });
     });
-
-    // 🔍 Lookup from static list
-    const strains = {
-      "Blue Dream": {
-        type: "Hybrid",
-        description: "A sativa-dominant hybrid that balances full-body relaxation with gentle mental invigoration."
-      },
-      "OG Kush": {
-        type: "Indica",
-        description: "A legendary strain known for its heavy effects and earthy pine scent."
-      },
-      "Sour Diesel": {
-        type: "Sativa",
-        description: "A pungent sativa that gets you energized and clear-headed fast."
-      },
-      "Girl Scout Cookies": {
-        type: "Hybrid",
-        description: "Also known as GSC, delivers euphoric relaxation with a sweet, earthy aroma."
-      }
-    };
-
-    const lookup = document.getElementById('lookup');
-    const results = document.getElementById('results');
-    const nameEl = document.getElementById('result-name');
-    const typeEl = document.getElementById('result-type');
-    const descEl = document.getElementById('result-desc');
-
-    lookup.addEventListener('input', () => {
-      const term = lookup.value.trim().toLowerCase();
-      const match = Object.keys(strains).find(s => s.toLowerCase().startsWith(term));
-
-      if (match) {
-        const data = strains[match];
-        results.classList.remove('hidden');
-        nameEl.textContent = match;
-        typeEl.textContent = data.type;
-        descEl.textContent = data.description;
-      } else {
-        results.classList.add('hidden');
-      }
-    });
   </script>
+
 </body>
 </html>
