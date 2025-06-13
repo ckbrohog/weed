@@ -7,45 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-  <style>
-    @keyframes smokeRise {
-      0% {
-        opacity: 0.9;
-        transform: translateY(0) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-200px) scale(2);
-      }
-    }
-
-    .smoke {
-      position: fixed;
-      bottom: 120px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 80px;
-      background: radial-gradient(circle, #88ff88 20%, transparent);
-      border-radius: 50%;
-      animation: smokeRise 2.5s ease-out forwards;
-      z-index: 50;
-      pointer-events: none;
-    }
-
-    .joint {
-      position: fixed;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 20px;
-      background: linear-gradient(to right, white, gray);
-      border-radius: 10px;
-      z-index: 49;
-      box-shadow: 0 0 5px #0f0;
-    }
-  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
@@ -57,62 +18,187 @@
       <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Leafly 🔍</button>
       <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Seedsman 🔍</button>
     </div>
+
     <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
     <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
     <label class="block mb-2">Description:</label>
     <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="3"></textarea>
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
+
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
-    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me
-    </button>
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">📍 Find Dispensaries Near Me</button>
   </form>
 
-  <div id="smoke-container"></div>
+  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-semibold text-green-300">Saved Strains</h2>
+      <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
+    </div>
+    <div class="relative mb-4">
+      <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
+      <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
+      <ul id="dropdown" class="absolute bg-gray-800 border border-gray-600 w-full mt-1 rounded hidden z-50 max-h-48 overflow-y-auto"></ul>
+    </div>
+    <div id="strain-list" class="space-y-4"></div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
+      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <textarea id="edit-description" rows="3" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <textarea id="edit-notes" rows="3" placeholder="How did it make you feel?" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <div class="flex space-x-1 mb-4" id="edit-stars"></div>
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+        <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    document.getElementById('find-near-me').addEventListener('click', () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const query = `https://www.google.com/maps/search/dispensary/@${lat},${lon},14z`;
-          window.open(query, '_blank');
-        }, () => alert("Unable to access location."));
-      } else {
-        alert("Geolocation not supported.");
-      }
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
+      authDomain: "weed-a53a5.firebaseapp.com",
+      projectId: "weed-a53a5",
+      storageBucket: "weed-a53a5.appspot.com",
+      messagingSenderId: "715010576158",
+      appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const list = document.getElementById('strain-list');
+    const searchBar = document.getElementById('search-bar');
+    const dropdown = document.getElementById('dropdown');
+    const sortButton = document.getElementById('sort-button');
+    const nameInput = document.getElementById('name');
+
+    let ascending = true;
+    let strains = [];
+
+    db.collection('strains').onSnapshot(snapshot => {
+      strains = [];
+      snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
+      renderList();
     });
 
-    const form = document.getElementById('strain-form');
-    const smokeContainer = document.getElementById('smoke-container');
-
-    function showSmokeAnimation() {
-      const joint = document.createElement('div');
-      joint.className = 'joint';
-      smokeContainer.appendChild(joint);
-
-      const smoke = document.createElement('div');
-      smoke.className = 'smoke';
-      smokeContainer.appendChild(smoke);
-
-      setTimeout(() => {
-        joint.remove();
-        smoke.remove();
-      }, 2500);
+    function renderList() {
+      list.innerHTML = '';
+      const sorted = strains.sort((a, b) =>
+        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
+      );
+      sorted.forEach(({ id, data }) => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
+        div.innerHTML = 
+          <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+          <p class="italic text-sm text-gray-300">${data.type}</p>
+          <p class="mt-2 text-white">${data.description}</p>
+          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1, 2, 3, 4, 5].map(i =>
+              <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
+            ).join('')}
+          </div>;
+        div.addEventListener('click', () => openEditModal(id, data));
+        const stars = div.querySelectorAll('.star');
+        stars.forEach(star => {
+          const r = parseInt(star.dataset.rating);
+          star.style.color = r <= data.rating ? 'gold' : 'black';
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await db.collection('strains').doc(id).update({ rating: r });
+          });
+        });
+        list.appendChild(div);
+      });
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value.trim();
-      const type = form.type.value.trim();
-      const description = form.description.value.trim();
-      const notes = form.notes.value.trim();
-      if (!name || !type || !description) return;
+    sortButton.addEventListener('click', () => {
+      ascending = !ascending;
+      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
+      renderList();
+    });
 
-      await firebase.firestore().collection('strains').add({ name, type, description, notes, rating: 0 });
-      form.reset();
-      showSmokeAnimation();
+    searchBar.addEventListener('input', () => {
+      const val = searchBar.value.toLowerCase();
+      dropdown.innerHTML = '';
+      if (!val) return dropdown.classList.add('hidden');
+      const matches = strains.filter(({ data }) => data.name.toLowerCase().includes(val));
+      matches.forEach(({ data }) => {
+        const li = document.createElement('li');
+        li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
+        li.textContent = data.name;
+        li.onclick = () => window.open(/notepad.html?strain=${encodeURIComponent(data.name)}, '_blank');
+        dropdown.appendChild(li);
+      });
+      dropdown.classList.toggle('hidden', matches.length === 0);
+    });
+
+    document.getElementById('lookup-leafly').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(https://www.leafly.com/search?q=${encodeURIComponent(query)}, '_blank');
+    });
+    document.getElementById('lookup-seedsman').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(https://www.seedsman.com/search?query=${encodeURIComponent(query)}, '_blank');
+    });
+
+    // Edit modal logic
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editNotes = document.getElementById('edit-notes');
+    const editStars = document.getElementById('edit-stars');
+    let currentId = null;
+    let currentRating = 0;
+
+    function openEditModal(id, data) {
+      currentId = id;
+      editName.value = data.name;
+      editType.value = data.type;
+      editDescription.value = data.description;
+      editNotes.value = data.notes || '';
+      currentRating = data.rating || 0;
+      renderEditStars();
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+
+    function renderEditStars() {
+      editStars.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.className = 'text-2xl cursor-pointer';
+        star.style.color = i <= currentRating ? 'gold' : 'black';
+        star.onclick = () => {
+          currentRating = i;
+          renderEditStars();
+        };
+        editStars.appendChild(star);
+      }
+    }
+
+    document.getElementById('save-edit').addEventListener('click', async () => {
+      const name = editName.value.trim();
+      const type = editType.value.trim();
+      const description = editDescription.value.trim();
+      const notes = editNotes.value.trim();
+      await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
+      closeEditModal();
     });
   </script>
 </body>
