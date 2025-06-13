@@ -3,51 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weed Strain Tracker</title>
+  <title>Weed Strain Tracker • Snapshot 2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <style>
+    @keyframes puff {
+      0% { transform: scale(0.5) translateY(0); opacity: 0.8; }
+      100% { transform: scale(2) translateY(-200px); opacity: 0; }
+    }
+    .smoke {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+      border-radius: 50%;
+      animation: puff 2s ease-out forwards;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
+<body class="bg-gray-900 text-white min-h-screen py-8 px-4">
+  <div class="max-w-4xl mx-auto space-y-6">
 
-  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
+    <header class="flex justify-between items-center">
+      <h1 class="text-4xl font-bold text-green-400">Weed Strain Tracker</h1>
+    </header>
 
-  <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
-    <label class="block mb-2">Strain Name:</label>
-    <div class="flex items-center mb-4 space-x-2">
-      <input type="text" id="name" required class="flex-grow p-2 rounded bg-gray-700 text-white" placeholder="Strain Name" />
-      <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold" title="Lookup on Leafly">Leafly 🔍</button>
-      <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold" title="Lookup on Seedsman">Seedsman 🔍</button>
+    <!-- Search & Sort -->
+    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 mb-6">
+      <input type="search" id="search-input" placeholder="Search strains..." class="flex-grow p-2 rounded bg-gray-700 text-white mb-4 md:mb-0" />
+      <select id="sort-select" class="p-2 rounded bg-gray-700 text-white w-48">
+        <option value="name">Name (A–Z)</option>
+        <option value="rating">Rating (High → Low)</option>
+        <option value="dateAdded">Date Added (Newest)</option>
+      </select>
     </div>
 
-    <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
-    <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
+    <!-- Add Strain Form -->
+    <form id="strain-form" class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <label class="block mb-1">Strain Name:</label>
+      <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
 
-    <label class="block mb-2">Description:</label>
-    <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="4"></textarea>
+      <label class="block mb-1">Type (Indica, Sativa, Hybrid):</label>
+      <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
 
-    <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
-      Add Strain
-    </button>
-  </form>
+      <label class="block mb-1">Description:</label>
+      <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
 
-  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
-    <div id="strain-list" class="space-y-4">
-      <!-- Strains go here -->
+      <label class="block mb-1">Effects/Tags (comma-separated):</label>
+      <input type="text" id="tags" class="w-full p-2 rounded bg-gray-700 mb-4" placeholder="e.g. Relaxing, Euphoric" />
+
+      <label class="block mb-1">Notes:</label>
+      <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" placeholder="Personal notes..."></textarea>
+
+      <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
+        Add Strain
+      </button>
+    </form>
+
+    <!-- Strain List -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
+      <div id="strain-list" class="space-y-4 max-h-[500px] overflow-y-auto"></div>
     </div>
+
   </div>
 
   <!-- Edit Modal -->
   <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
-    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
-      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <textarea id="edit-description" rows="4" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
-      <div class="flex space-x-1 mb-4" id="edit-stars">
-        <!-- Stars will be added here -->
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md space-y-4">
+      <h3 class="text-xl font-bold text-green-300">Edit Strain</h3>
+
+      <div class="space-y-2">
+        <label>Name:</label>
+        <input id="edit-name" class="w-full p-2 rounded bg-gray-700" />
+
+        <label>Type:</label>
+        <input id="edit-type" class="w-full p-2 rounded bg-gray-700" />
+
+        <label>Description:</label>
+        <textarea id="edit-description" class="w-full p-2 rounded bg-gray-700"></textarea>
+
+        <label>Effects/Tags (comma-separated):</label>
+        <input id="edit-tags" class="w-full p-2 rounded bg-gray-700" />
+
+        <label>Notes:</label>
+        <textarea id="edit-notes" class="w-full p-2 rounded bg-gray-700"></textarea>
+
+        <label>Rating:</label>
+        <div id="edit-stars" class="flex space-x-1"></div>
+
+        <div id="edit-dates" class="text-xs text-gray-400"></div>
       </div>
+
       <div class="flex justify-end space-x-2">
         <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
         <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
@@ -56,6 +108,7 @@
   </div>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -64,123 +117,166 @@
       messagingSenderId: "715010576158",
       appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Elements
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = form.name.value.trim();
-      const type = form.type.value.trim();
-      const description = form.description.value.trim();
-      if (!name || !type || !description) return;
-
-      await db.collection('strains').add({ name, type, description, rating: 0 });
-      form.reset();
-    });
-
-    db.collection('strains').orderBy('name').onSnapshot(snapshot => {
-      list.innerHTML = '';
-      snapshot.forEach(doc => {
-        const { name, type, description, rating = 0 } = doc.data();
-        const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition';
-        div.innerHTML = `
-          <h3 class="text-xl font-bold text-green-400">${name}</h3>
-          <p class="italic text-sm text-gray-300">${type}</p>
-          <p class="mt-2 text-white">${description}</p>
-          <div class="flex space-x-1 mt-2">
-            ${[1, 2, 3, 4, 5].map(i => `
-              <span class="star text-2xl cursor-pointer" data-doc="${doc.id}" data-rating="${i}">★</span>
-            `).join('')}
-          </div>
-        `;
-        const stars = div.querySelectorAll('.star');
-        stars.forEach(star => {
-          const r = parseInt(star.dataset.rating);
-          star.style.color = r <= rating ? 'gold' : 'black';
-          star.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await db.collection('strains').doc(doc.id).update({ rating: r });
-          });
-        });
-        div.onclick = () => openEditModal(doc.id, { name, type, description, rating });
-        list.appendChild(div);
-      });
-    });
-
-    // Edit modal logic
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
     const editModal = document.getElementById('edit-modal');
     const editName = document.getElementById('edit-name');
     const editType = document.getElementById('edit-type');
     const editDescription = document.getElementById('edit-description');
+    const editTags = document.getElementById('edit-tags');
+    const editNotes = document.getElementById('edit-notes');
     const editStars = document.getElementById('edit-stars');
-    let currentId = null;
-    let currentRating = 0;
+    const editDates = document.getElementById('edit-dates');
+    const saveEditBtn = document.getElementById('save-edit');
 
-    function openEditModal(id, data) {
-      currentId = id;
-      editName.value = data.name;
-      editType.value = data.type;
-      editDescription.value = data.description;
-      currentRating = data.rating || 0;
+    let strains = [], currentId = null, currentRating = 0;
+
+    // Smoke animation
+    function showSmoke() {
+      const puff = document.createElement('div');
+      puff.classList.add('smoke');
+      document.body.appendChild(puff);
+      setTimeout(() => puff.remove(), 2000);
+    }
+
+    // Add strain
+    form.addEventListener('submit', async e =>{
+      e.preventDefault();
+      const data = {
+        name: form.name.value.trim(),
+        type: form.type.value.trim(),
+        description: form.description.value.trim(),
+        tags: form.tags.value.trim().split(',').map(s=>s.trim()).filter(s=>s),
+        notes: form.notes.value,
+        rating: 0,
+        dateAdded: firebase.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection('strains').add(data);
+      form.reset();
+      showSmoke();
+    });
+
+    // Listen to DB
+    db.collection('strains').onSnapshot(snap => {
+      strains = snap.docs.map(d=>({ id: d.id, ...d.data() }));
+      renderList();
+    });
+
+    // Render list with sort and filter
+    function renderList(){
+      let arr = [...strains];
+      const q = searchInput.value.toLowerCase();
+      if(q) arr = arr.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.type.toLowerCase().includes(q) ||
+        s.tags?.some(t=>t.toLowerCase().includes(q)) ||
+        s.notes?.toLowerCase().includes(q)
+      );
+      switch(sortSelect.value){
+        case 'name': arr.sort((a,b)=>a.name.localeCompare(b.name)); break;
+        case 'rating': arr.sort((a,b)=> (b.rating||0)-(a.rating||0)); break;
+        case 'dateAdded':
+          arr.sort((a,b)=> b.dateAdded?.toMillis() - a.dateAdded?.toMillis());
+          break;
+      }
+      list.innerHTML = '';
+      arr.forEach(s=> {
+        const div = document.createElement('div');
+        div.className='bg-gray-700 p-4 rounded relative hover:bg-gray-600';
+        div.innerHTML = `
+          <button class="delete absolute top-2 right-2 text-red-500 hover:text-red-700">&times;</button>
+          <h3 class="text-xl font-bold text-green-400">${s.name}</h3>
+          <p class="italic text-sm text-gray-300">${s.type}</p>
+          <p class="mt-2 text-white">${s.description}</p>
+          <div class="flex mt-2 space-x-1">${[1,2,3,4,5].map(i=>
+            `<span class="star cursor-pointer text-2xl" data-id="${s.id}" data-rating="${i}" style="color:${i<=s.rating?'gold':'black'}">★</span>`
+          ).join('')}</div>
+          <div class="mt-2">${(s.tags||[]).map(t=>
+            `<span class="inline-block bg-green-600 text-black text-xs px-2 py-0.5 rounded">${t}</span>`
+          ).join(' ')}</div>
+          <p class="mt-2 text-gray-400 text-xs italic">${s.notes||''}</p>
+        `;
+        div.querySelector('.delete').onclick = async e =>{
+          e.stopPropagation();
+          if(confirm(`Delete "${s.name}"?`)) await db.collection('strains').doc(s.id).delete();
+        };
+        div.querySelectorAll('.star').forEach(star=>{
+          star.onclick = async e=>{
+            e.stopPropagation();
+            const r = parseInt(star.getAttribute('data-rating'));
+            await db.collection('strains').doc(s.id).update({
+              rating: r,
+              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          };
+        });
+        div.onclick = ()=>openEditModal(s);
+        list.appendChild(div);
+      });
+    }
+
+    // Edit modal
+    function openEditModal(s){
+      currentId = s.id;
+      editName.value = s.name;
+      editType.value = s.type;
+      editDescription.value = s.description;
+      editTags.value = (s.tags||[]).join(', ');
+      editNotes.value = s.notes || '';
+      currentRating = s.rating || 0;
+      editDates.textContent = `Added: ${s.dateAdded?.toDate().toLocaleDateString() || '?'} | Updated: ${s.lastUpdated?.toDate().toLocaleDateString() || '?'}`;
       renderEditStars();
       editModal.classList.remove('hidden');
       editModal.classList.add('flex');
     }
 
-    function closeEditModal() {
+    function closeEditModal(){
       editModal.classList.add('hidden');
       editModal.classList.remove('flex');
+      currentId = null;
+      currentRating = 0;
     }
 
-    function renderEditStars() {
-      editStars.innerHTML = '';
-      for (let i = 1; i <= 5; i++) {
+    function renderEditStars(){
+      editStars.innerHTML='';
+      for(let i=1;i<=5;i++){
         const star = document.createElement('span');
         star.textContent = '★';
-        star.className = 'text-2xl cursor-pointer';
-        star.style.color = i <= currentRating ? 'gold' : 'black';
-        star.onclick = () => {
-          currentRating = i;
-          renderEditStars();
-        };
+        star.className='text-2xl cursor-pointer';
+        star.style.color = i<=currentRating?'gold':'black';
+        star.onclick = ()=>{ currentRating=i; renderEditStars(); };
         editStars.appendChild(star);
       }
     }
 
-    document.getElementById('save-edit').addEventListener('click', async () => {
-      const name = editName.value.trim();
-      const type = editType.value.trim();
-      const description = editDescription.value.trim();
-      await db.collection('strains').doc(currentId).update({ name, type, description, rating: currentRating });
+    saveEditBtn.onclick = async ()=>{
+      if(!currentId) return;
+      await db.collection('strains').doc(currentId).update({
+        name: editName.value.trim(),
+        type: editType.value.trim(),
+        description: editDescription.value.trim(),
+        tags: editTags.value.trim().split(',').map(t=>t.trim()).filter(t=>t),
+        notes: editNotes.value,
+        rating: currentRating,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
       closeEditModal();
+    };
+
+    document.addEventListener('click', e =>{
+      if(e.target===editModal) closeEditModal();
     });
 
-    // Leafly and Seedsman lookup buttons
-    document.getElementById('lookup-leafly').addEventListener('click', () => {
-      const query = document.getElementById('name').value.trim();
-      if (!query) {
-        alert('Please enter a strain name to lookup.');
-        return;
-      }
-      const url = `https://www.leafly.com/search?q=${encodeURIComponent(query)}`;
-      window.open(url, '_blank');
-    });
+    searchInput.oninput = renderList;
+    sortSelect.onchange = renderList;
 
-    document.getElementById('lookup-seedsman').addEventListener('click', () => {
-      const query = document.getElementById('name').value.trim();
-      if (!query) {
-        alert('Please enter a strain name to lookup.');
-        return;
-      }
-      const url = `https://www.seedsman.com/search?query=${encodeURIComponent(query)}`;
-      window.open(url, '_blank');
-    });
   </script>
-
 </body>
 </html>
