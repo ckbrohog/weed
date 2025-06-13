@@ -13,6 +13,28 @@
 
   <!-- CSS for smoke animation -->
   <style>
+    <style>
+  #logo {
+    max-width: 400px;
+    display: block;
+    margin: 0 auto 2rem auto;
+  }
+
+  .smoke {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.6);
+    animation: smokeAnimation 3s forwards;
+    z-index: 100;
+  }
+
+  @keyframes smokeAnimation {
+    ...
+  }
+</style>
+
     .smoke {
       position: absolute;
       width: 0;
@@ -39,10 +61,12 @@
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen px-4 py-8">
+<body class="text-white min-h-screen px-4 py-8" style="background: url('images/brick-wall.jpg') repeat; background-size: cover;">
+
 
   <!-- Header -->
-  <h1 class="text-4xl font-bold text-green-400 text-center mb-8">CannaTracker</h1>
+  <img id="logo" src="images/logo.png" alt="CannaTracker Logo" class="max-w-xs mx-auto mb-8" />
+
 
   <!-- Leafly and Seedsman Buttons (moved to top) -->
   <div class="flex justify-center space-x-4 mb-4">
