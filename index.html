@@ -115,7 +115,14 @@
           </div>
           <button onclick="openDetailsModal('${data.name}')" class="mt-2 bg-blue-500 text-white py-1 px-3 rounded">Details</button>
         `;
-        div.addEventListener('click', () => openEditModal(id, data));
+
+        // Stop event propagation to prevent modal interference
+        div.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent click from opening the modal when editing notes
+          openEditModal(id, data);
+        });
+
+        // Rating stars
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
           const r = parseInt(star.dataset.rating);
@@ -125,6 +132,7 @@
             await db.collection('strains').doc(id).update({ rating: r });
           });
         });
+
         list.appendChild(div);
       });
     }
@@ -156,7 +164,25 @@
         growKnowledge: strainKnowledge[name] || "No details available."
       };
     }
-    
+
+    // Lookup Buttons for Leafly, Seedsman, and Dispensary Locator
+    document.getElementById('lookup-leafly').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    document.getElementById('lookup-seedsman').addEventListener('click', () => {
+      const query = nameInput.value.trim();
+      if (!query) return alert('Enter a strain name to look up.');
+      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+    });
+
+    document.getElementById('find-near-me').addEventListener('click', () => {
+      window.open(`https://www.google.com/maps/search/weed+dispensaries+near+me`, '_blank');
+    });
+
+    // Sort Button Logic
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
       sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
