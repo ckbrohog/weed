@@ -8,35 +8,41 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-storage-compat.js"></script>
 
   <style>
     .smoke {
       position: absolute;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.6);
-      animation: smokeAnimation 3s forwards;
+      width: 24px;
+      height: 24px;
+      animation: floatSmoke 3s ease-out forwards;
       z-index: 100;
     }
 
-    @keyframes smokeAnimation {
+    .smoke::before {
+      content: '🚬';
+      font-size: 24px;
+      position: absolute;
+      bottom: -10px;
+      left: -10px;
+      animation: floatSmoke 3s ease-out forwards;
+    }
+
+    @keyframes floatSmoke {
       0% {
-        width: 10px;
-        height: 10px;
-        opacity: 1;
         transform: translateY(0) scale(1);
+        opacity: 1;
       }
       100% {
-        width: 50px;
-        height: 50px;
+        transform: translateY(-150px) scale(1.8);
         opacity: 0;
-        transform: translateY(-200px) scale(2);
       }
     }
+
     .twirl {
       animation: twirl 0.6s ease forwards;
     }
+
     @keyframes twirl {
       0% { transform: rotate(0deg); color: black; }
       100% { transform: rotate(360deg); color: gold; }
@@ -68,6 +74,9 @@
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
+    <label class="block mb-2">Upload Image:</label>
+    <input type="file" id="image" accept="image/*" class="mb-4 w-full text-white" />
+
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
 
     <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
@@ -88,10 +97,11 @@
     <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
   </div>
 
-  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
+  <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg relative">
     <div class="relative mb-4">
       <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
       <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
+      <ul id="search-dropdown" class="absolute z-50 bg-gray-700 text-white mt-1 w-full rounded shadow-md max-h-60 overflow-y-auto hidden"></ul>
     </div>
     <div id="strain-list" class="space-y-4"></div>
   </div>
@@ -107,6 +117,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
     const list = document.getElementById('strain-list');
     const nameInput = document.getElementById('name');
@@ -133,12 +144,17 @@
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
         div.innerHTML = `
+          ${data.imageUrl ? `<img src="${data.imageUrl}" class="w-full max-h-48 object-cover mb-2 rounded">` : ''}
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
           <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
           <div class="flex space-x-1 mt-2">
             ${[1,2,3,4,5].map(i => `<span class="star text-2xl cursor-pointer" data-id="${id}" data-rating="${i}">★</span>`).join('')}
+          </div>
+          <div class="flex space-x-2 mt-3">
+            <button onclick="alert('Notes: ${data.notes || 'None'}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">📝 Notes</button>
+            <button onclick="alert('Description: ${data.description}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">ℹ️ Details</button>
           </div>
         `;
 
@@ -174,13 +190,23 @@
       const type = selectedType;
       const description = document.getElementById('description').value.trim();
       const notes = document.getElementById('notes').value.trim();
+      const imageFile = document.getElementById('image').files[0];
+      let imageUrl = '';
 
       if (!name || !type || !description) return alert('Fill out all required fields.');
 
-      await db.collection('strains').add({ name, type, description, notes, rating: 0 });
+      if (imageFile) {
+        const storageRef = storage.ref(`strain-images/${Date.now()}_${imageFile.name}`);
+        await storageRef.put(imageFile);
+        imageUrl = await storageRef.getDownloadURL();
+      }
+
+      await db.collection('strains').add({ name, type, description, notes, rating: 0, imageUrl });
+
       nameInput.value = '';
       document.getElementById('description').value = '';
       document.getElementById('notes').value = '';
+      document.getElementById('image').value = '';
       selectedType = '';
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
       triggerSmokeAnimation();
@@ -189,6 +215,8 @@
     function triggerSmokeAnimation() {
       const smokeElement = document.createElement('div');
       smokeElement.className = 'smoke';
+      smokeElement.style.left = '50%';
+      smokeElement.style.top = '70%';
       document.body.appendChild(smokeElement);
       setTimeout(() => smokeElement.remove(), 3000);
     }
@@ -215,6 +243,40 @@
         btn.classList.add('bg-green-500');
         selectedType = btn.textContent;
       });
+    });
+
+    const searchBar = document.getElementById('search-bar');
+    const searchDropdown = document.getElementById('search-dropdown');
+
+    searchBar.addEventListener('input', () => {
+      const value = searchBar.value.toLowerCase();
+      searchDropdown.innerHTML = '';
+
+      const matches = strains
+        .filter(({ data }) => data.name.toLowerCase().includes(value))
+        .slice(0, 10);
+
+      if (matches.length && value) {
+        searchDropdown.classList.remove('hidden');
+        matches.forEach(({ data }) => {
+          const li = document.createElement('li');
+          li.className = 'px-4 py-2 hover:bg-gray-600 cursor-pointer';
+          li.textContent = data.name;
+          li.onclick = () => {
+            searchBar.value = data.name;
+            searchDropdown.classList.add('hidden');
+          };
+          searchDropdown.appendChild(li);
+        });
+      } else {
+        searchDropdown.classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchBar.contains(e.target)) {
+        searchDropdown.classList.add('hidden');
+      }
     });
   </script>
 </body>
