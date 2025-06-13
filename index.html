@@ -42,6 +42,17 @@
     </button>
   </form>
 
+  <!-- Filter by Type -->
+  <div class="flex justify-between items-center mt-6 mb-4">
+    <label for="filter-type" class="text-sm text-gray-300">Filter by Type:</label>
+    <select id="filter-type" class="bg-gray-700 text-white rounded p-2">
+      <option value="">All</option>
+      <option value="Sativa">Sativa</option>
+      <option value="Indica">Indica</option>
+      <option value="Hybrid">Hybrid</option>
+    </select>
+  </div>
+
   <!-- Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <div class="flex justify-between items-center mb-4">
@@ -100,6 +111,7 @@
     const detailsModal = document.getElementById('details-modal');
     const detailsStrainName = document.getElementById('details-strain-name');
     const detailsGrowKnowledge = document.getElementById('details-grow-knowledge');
+    const filterTypeSelect = document.getElementById('filter-type');
     let ascending = true;
     let strains = [];
 
@@ -111,7 +123,13 @@
 
     function renderList() {
       list.innerHTML = '';
-      const sorted = strains.sort((a, b) =>
+      const filteredStrains = strains.filter(({ data }) => {
+        const filterType = filterTypeSelect.value;
+        if (!filterType) return true; // No filter, show all
+        return data.type === filterType;
+      });
+
+      const sorted = filteredStrains.sort((a, b) =>
         ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
       );
       sorted.forEach(({ id, data }) => {
@@ -196,6 +214,9 @@
         growKnowledge: strainKnowledge[name] || "No details available."
       };
     }
+
+    // Listen for filter type change
+    filterTypeSelect.addEventListener('change', renderList);
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
