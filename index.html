@@ -6,6 +6,24 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <style>
+  @keyframes puff {
+    0% { transform: translateY(0) scale(0.5); opacity: 1; }
+    100% { transform: translateY(-100px) scale(2); opacity: 0; }
+  }
+  .smoke {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #32cd32, #006400);
+    border-radius: 50%;
+    animation: puff 2s ease-out forwards;
+    pointer-events: none;
+    z-index: 100;
+  }
+</style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
@@ -221,5 +239,27 @@
       closeEditModal();
     });
   </script>
+  <div id="smoke-container"></div>
+<script>
+  function triggerSmoke() {
+    const smoke = document.createElement('div');
+    smoke.classList.add('smoke');
+    smoke.style.left = (window.innerWidth / 2 - 10) + 'px';
+    document.getElementById('smoke-container').appendChild(smoke);
+    setTimeout(() => smoke.remove(), 2000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('strain-form');
+    if (form) {
+      form.addEventListener('submit', () => {
+        setTimeout(() => {
+          triggerSmoke();
+        }, 200); // delay ensures it's triggered visually after strain is added
+      });
+    }
+  });
+</script>
+
 </body>
 </html>
