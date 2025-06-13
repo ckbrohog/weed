@@ -5,42 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-
-  <!-- Smoke animation -->
-  <style>
-    @keyframes puff {
-      0% { transform: translateY(0) scale(1); opacity: 0.6; }
-      100% { transform: translateY(-200px) scale(2); opacity: 0; }
-    }
-
-    .smoke {
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 80%);
-      animation: puff 2.5s ease-out forwards;
-    }
-
-    .smoke-wrapper {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: none;
-      z-index: 50;
-    }
-  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
-  <!-- Add Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 mb-4" />
@@ -56,27 +27,26 @@
     </button>
   </form>
 
-  <!-- Saved Strains -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-semibold mb-4 text-green-300">Saved Strains</h2>
     <div id="strain-list" class="space-y-4">
-      <!-- Strains appear here -->
+      <!-- Strains go here -->
     </div>
   </div>
 
-  <!-- Smoke -->
-  <div id="smoke-wrapper" class="smoke-wrapper"></div>
-
   <!-- Edit Modal -->
-  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center z-50">
-    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
-      <h2 class="text-xl font-bold text-green-400 mb-4">Edit Strain</h2>
-      <input type="text" id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <input type="text" id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
-      <textarea id="edit-description" class="w-full p-2 rounded bg-gray-700 mb-4" rows="4"></textarea>
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
+      <input id="edit-name" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <input id="edit-type" class="w-full p-2 rounded bg-gray-700 mb-4" />
+      <textarea id="edit-description" rows="4" class="w-full p-2 rounded bg-gray-700 mb-4"></textarea>
+      <div class="flex space-x-1 mb-4" id="edit-stars">
+        <!-- Stars will be added here -->
+      </div>
       <div class="flex justify-end space-x-2">
-        <button id="cancel-edit" class="bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
-        <button id="save-edit" class="bg-green-500 hover:bg-green-600 text-black font-bold px-4 py-2 rounded">Save Changes</button>
+        <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+        <button id="save-edit" class="px-4 py-2 bg-green-500 text-black font-bold rounded hover:bg-green-600">Save</button>
       </div>
     </div>
   </div>
@@ -96,87 +66,96 @@
 
     const form = document.getElementById('strain-form');
     const list = document.getElementById('strain-list');
-    const smokeWrapper = document.getElementById('smoke-wrapper');
 
-    // Edit Modal Elements
-    const modal = document.getElementById('edit-modal');
-    const editName = document.getElementById('edit-name');
-    const editType = document.getElementById('edit-type');
-    const editDescription = document.getElementById('edit-description');
-    const saveEditBtn = document.getElementById('save-edit');
-    const cancelEditBtn = document.getElementById('cancel-edit');
-    let currentDocId = null;
-
-    function puffSmoke() {
-      for (let i = 0; i < 5; i++) {
-        const smoke = document.createElement('div');
-        smoke.classList.add('smoke');
-        smoke.style.left = `${Math.random() * 200 - 100}px`;
-        smoke.style.animationDelay = `${i * 0.15}s`;
-        smokeWrapper.appendChild(smoke);
-        setTimeout(() => smoke.remove(), 2500);
-      }
-    }
-
-    // Submit form to Firestore
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
       const type = form.type.value.trim();
       const description = form.description.value.trim();
-
       if (!name || !type || !description) return;
 
-      try {
-        await db.collection('strains').add({ name, type, description });
-        form.reset();
-        puffSmoke();
-      } catch (error) {
-        alert("Error saving strain: " + error.message);
-      }
+      await db.collection('strains').add({ name, type, description, rating: 0 });
+      form.reset();
     });
 
-    // Load and display strains
     db.collection('strains').orderBy('name').onSnapshot(snapshot => {
       list.innerHTML = '';
       snapshot.forEach(doc => {
-        const { name, type, description } = doc.data();
+        const { name, type, description, rating = 0 } = doc.data();
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition';
         div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${name}</h3>
           <p class="italic text-sm text-gray-300">${type}</p>
           <p class="mt-2 text-white">${description}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1, 2, 3, 4, 5].map(i => `
+              <span class="star text-2xl cursor-pointer" data-doc="${doc.id}" data-rating="${i}">★</span>
+            `).join('')}
+          </div>
         `;
-        div.addEventListener('click', () => {
-          currentDocId = doc.id;
-          editName.value = name;
-          editType.value = type;
-          editDescription.value = description;
-          modal.classList.remove('hidden');
+        const stars = div.querySelectorAll('.star');
+        stars.forEach(star => {
+          const r = parseInt(star.dataset.rating);
+          star.style.color = r <= rating ? 'gold' : 'black';
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await db.collection('strains').doc(doc.id).update({ rating: r });
+          });
         });
+        div.onclick = () => openEditModal(doc.id, { name, type, description, rating });
         list.appendChild(div);
       });
     });
 
-    // Save edits
-    saveEditBtn.addEventListener('click', async () => {
-      if (!currentDocId) return;
-      try {
-        await db.collection('strains').doc(currentDocId).update({
-          name: editName.value.trim(),
-          type: editType.value.trim(),
-          description: editDescription.value.trim()
-        });
-        modal.classList.add('hidden');
-      } catch (err) {
-        alert("Error updating strain: " + err.message);
-      }
-    });
+    // Edit modal logic
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editStars = document.getElementById('edit-stars');
+    let currentId = null;
+    let currentRating = 0;
 
-    cancelEditBtn.addEventListener('click', () => {
-      modal.classList.add('hidden');
+    function openEditModal(id, data) {
+      currentId = id;
+      editName.value = data.name;
+      editType.value = data.type;
+      editDescription.value = data.description;
+      currentRating = data.rating || 0;
+      renderEditStars();
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+
+    function renderEditStars() {
+      editStars.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.className = 'text-2xl cursor-pointer';
+        star.style.color = i <= currentRating ? 'gold' : 'black';
+        star.onclick = () => {
+          currentRating = i;
+          renderEditStars();
+        };
+        editStars.appendChild(star);
+      }
+    }
+
+    document.getElementById('save-edit').addEventListener('click', async () => {
+      const name = editName.value.trim();
+      const type = editType.value.trim();
+      const description = editDescription.value.trim();
+      await db.collection('strains').doc(currentId).update({ name, type, description, rating: currentRating });
+      closeEditModal();
     });
   </script>
+
 </body>
 </html>
