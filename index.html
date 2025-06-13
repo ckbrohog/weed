@@ -23,7 +23,7 @@
   </div>
 
   <!-- Add Strain Form -->
-  <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
+  <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg" onsubmit="handleAddStrain(event)">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
 
@@ -230,7 +230,7 @@
       renderList();
     });
 
-    // Type Button Logic (Indica, Sativa, Hybrid)
+    // Type Button Logic (Indica, Sativa, Hybrid) - only for strain input
     document.querySelectorAll('.type-btn').forEach(button => {
       button.addEventListener('click', () => {
         // Reset all buttons to gray
@@ -239,11 +239,42 @@
         // Set clicked button to green
         button.classList.add('bg-green-500');
         
-        // Set the selected type
+        // Set the selected type for the new strain
         selectedType = button.textContent;
-        renderList();
       });
     });
+
+    // Handle Add Strain
+    function handleAddStrain(event) {
+      event.preventDefault();
+
+      const strainName = nameInput.value.trim();
+      const description = document.getElementById('description').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+      
+      if (!strainName || !description || !selectedType) {
+        alert("Please fill in all fields and select a strain type.");
+        return;
+      }
+
+      db.collection('strains').add({
+        name: strainName,
+        type: selectedType,
+        description,
+        notes,
+        rating: 0, // Default rating
+      }).then(() => {
+        alert('Strain added successfully!');
+        // Clear the form and reset the type buttons
+        nameInput.value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('notes').value = '';
+        selectedType = '';
+        document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
+      }).catch((error) => {
+        console.error("Error adding strain: ", error);
+      });
+    }
 
     // Lookup Buttons for Leafly and Seedsman
     document.getElementById('lookup-leafly').addEventListener('click', () => {
