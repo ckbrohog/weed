@@ -35,6 +35,9 @@
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
+    <label class="block mb-2">Strain Image:</label>
+<input type="file" id="image" accept="image/*" class="w-full p-2 rounded bg-gray-700 mb-4" />
+
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
 
     <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
@@ -223,6 +226,74 @@
       await db.collection('strains').doc(currentId).update({ name, type, description, notes, rating: currentRating });
       closeEditModal();
     });
+    <script>
+  const imageInput = document.getElementById('image');
+
+  // Firebase Storage Reference
+  const storage = firebase.storage();
+
+  // Form submission with image upload
+  document.getElementById('strain-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value.trim();
+    const type = document.getElementById('type').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const notes = document.getElementById('notes').value.trim();
+    const file = imageInput.files[0];
+
+    if (!name || !type || !description) return;
+
+    let imageUrl = '';
+    if (file) {
+      const storageRef = storage.ref(`strain-images/${Date.now()}_${file.name}`);
+      await storageRef.put(file);
+      imageUrl = await storageRef.getDownloadURL();
+    }
+
+    await db.collection('strains').add({ name, type, description, notes, imageUrl });
+    document.getElementById('strain-form').reset();
+  });
+
+  // Update renderList to show images
+  function renderList() {
+    list.innerHTML = '';
+    const sorted = strains.sort((a, b) =>
+      ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
+    );
+    sorted.forEach(({ id, data }) => {
+      const div = document.createElement('div');
+      div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
+
+      div.innerHTML = `
+        ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" class="mb-3 rounded w-full max-h-48 object-cover">` : ''}
+        <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+        <p class="italic text-sm text-gray-300">${data.type}</p>
+        <p class="mt-2 text-white">${data.description}</p>
+        <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+        <div class="flex space-x-1 mt-2">
+          ${[1, 2, 3, 4, 5].map(i =>
+            `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`
+          ).join('')}
+        </div>
+      `;
+
+      div.addEventListener('click', () => openEditModal(id, data));
+      const stars = div.querySelectorAll('.star');
+      stars.forEach(star => {
+        const r = parseInt(star.dataset.rating);
+        star.style.color = r <= data.rating ? 'gold' : 'black';
+        star.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await db.collection('strains').doc(id).update({ rating: r });
+        });
+      });
+
+      list.appendChild(div);
+    });
+  }
+</script>
+
   </script>
 </body>
 </html>
