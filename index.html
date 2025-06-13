@@ -262,7 +262,8 @@ div.innerHTML = `
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
+      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
+
       renderList();
     });
 
