@@ -6,24 +6,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-  <style>
+ <style>
   @keyframes puff {
-    0% { transform: translateY(0) scale(0.5); opacity: 1; }
-    100% { transform: translateY(-100px) scale(2); opacity: 0; }
+    0% { transform: translateY(0) scale(1); opacity: 0.8; }
+    100% { transform: translateY(-120px) scale(2.5); opacity: 0; }
   }
-  .smoke {
-    position: fixed;
-    bottom: 120px;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    background: radial-gradient(circle, #32cd32, #006400);
-    border-radius: 50%;
-    animation: puff 2s ease-out forwards;
-    pointer-events: none;
-    z-index: 100;
+
+  .animate-puff {
+    animation: puff 2.5s ease-out forwards;
   }
 </style>
+
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
@@ -125,6 +118,8 @@
       const notes = document.getElementById('notes').value.trim();
       if (!name || !type || !description) return;
       await db.collection('strains').add({ name, type, description, notes, rating: 0 });
+      triggerSmoke();
+
       document.getElementById('strain-form').reset();
     });
 
@@ -238,28 +233,16 @@
         .update({ name, type, description: desc, notes, rating: currentRating });
       closeEditModal();
     });
-  </script>
-  <div id="smoke-container"></div>
-<script>
-  function triggerSmoke() {
-    const smoke = document.createElement('div');
-    smoke.classList.add('smoke');
-    smoke.style.left = (window.innerWidth / 2 - 10) + 'px';
-    document.getElementById('smoke-container').appendChild(smoke);
-    setTimeout(() => smoke.remove(), 2000);
-  }
+<!-- Smoke and Snoop Animation -->
+<div id="smoke-animation" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 hidden z-50">
+  <div class="relative w-24 h-24">
+    <div class="absolute bottom-0 left-1/2 w-3 h-8 bg-gray-300 rounded-sm -translate-x-1/2"></div> <!-- joint -->
+    <div id="smoke-cloud" class="absolute bottom-8 left-1/2 w-40 h-40 rounded-full bg-green-400 opacity-70 blur-lg animate-puff -translate-x-1/2"></div>
+  </div>
+</div>
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('strain-form');
-    if (form) {
-      form.addEventListener('submit', () => {
-        setTimeout(() => {
-          triggerSmoke();
-        }, 200); // delay ensures it's triggered visually after strain is added
-      });
-    }
-  });
-</script>
-
+<!-- Snoop Dogg Popup -->
+<img id="snoop-popup" src="https://media.giphy.com/media/3orieW5gJrjDNr8DVm/giphy.gif"
+     alt="Snoop Dogg" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 opacity-0 transition-opacity duration-1000 z-50 pointer-events-none">
 </body>
 </html>
