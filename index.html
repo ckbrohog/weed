@@ -1,20 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Meta and Title -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weed Strain Tracker</title>
+
+  <!-- Styles and Firebase SDKs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
 
+  <!-- Header -->
   <h1 class="text-4xl font-bold text-green-400 text-center mb-8">Weed Strain Tracker</h1>
 
+  <!-- Core Feature: Add Strain Form -->
   <form id="strain-form" class="bg-gray-800 max-w-md mx-auto p-6 rounded-lg shadow-lg">
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
+
+    <!-- Core Feature: Lookup Buttons -->
     <div class="flex items-center mb-4 space-x-2">
       <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Leafly 🔍</button>
       <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Seedsman 🔍</button>
@@ -22,33 +29,42 @@
 
     <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
     <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
+
     <label class="block mb-2">Description:</label>
     <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="3"></textarea>
+
     <label class="block mb-2">Notes:</label>
     <textarea id="notes" class="w-full p-2 rounded bg-gray-700 mb-4" rows="2" placeholder="Optional notes..."></textarea>
 
+    <!-- Core Feature: Submit Button -->
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">
       Add Strain
     </button>
+
+    <!-- Core Feature: Find Dispensaries Button -->
     <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
       📍 Find Dispensaries Near Me
     </button>
   </form>
 
+  <!-- Core Feature: Saved Strains Section -->
   <div class="max-w-xl mx-auto mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-semibold text-green-300">Saved Strains</h2>
       <button id="sort-button" class="text-sm bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Sort: A–Z</button>
     </div>
+
+    <!-- Core Feature: Search and Dropdown -->
     <div class="relative mb-4">
       <input id="search-bar" type="text" placeholder="Search strains..." class="w-full p-2 pl-10 rounded bg-gray-700 text-white" />
       <div class="absolute left-3 top-2.5 text-white pointer-events-none">🔍</div>
       <ul id="dropdown" class="absolute bg-gray-800 border border-gray-600 w-full mt-1 rounded hidden z-50 max-h-48 overflow-y-auto"></ul>
     </div>
+
     <div id="strain-list" class="space-y-4"></div>
   </div>
 
-  <!-- Edit Modal -->
+  <!-- Core Feature: Edit Modal -->
   <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
     <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
       <h3 class="text-xl font-bold text-green-300 mb-4">Edit Strain</h3>
@@ -64,7 +80,9 @@
     </div>
   </div>
 
+  <!-- Scripts Section (Firebase Logic, UI Interaction) -->
   <script>
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBeR5kfsutaflDkMqDQJgU4lGzeXR3VuTk",
       authDomain: "weed-a53a5.firebaseapp.com",
@@ -74,17 +92,28 @@
       appId: "1:715010576158:web:59a2064fb4ca7ea8f8030f"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // Global Variables and DOM Elements
     const list = document.getElementById('strain-list');
     const searchBar = document.getElementById('search-bar');
     const dropdown = document.getElementById('dropdown');
     const sortButton = document.getElementById('sort-button');
+    const editModal = document.getElementById('edit-modal');
+    const editName = document.getElementById('edit-name');
+    const editType = document.getElementById('edit-type');
+    const editDescription = document.getElementById('edit-description');
+    const editNotes = document.getElementById('edit-notes');
+    const editStars = document.getElementById('edit-stars');
 
+    let currentId = null;
+    let currentRating = 0;
     let ascending = true;
     let strains = [];
 
+    // Fetch and Render Strains
     db.collection('strains').onSnapshot(snapshot => {
       strains = [];
       snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
@@ -94,24 +123,20 @@
     function renderList() {
       list.innerHTML = '';
       const sorted = strains.sort((a, b) =>
-        ascending
-          ? a.data.name.localeCompare(b.data.name)
-          : b.data.name.localeCompare(a.data.name)
+        ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
       );
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition cursor-pointer';
-        div.innerHTML = 
+        div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
           <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
           <div class="flex space-x-1 mt-2">
-            ${[1, 2, 3, 4, 5].map(i =>
-              <span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>
-            ).join('')}
+            ${[1, 2, 3, 4, 5].map(i => `<span class="star text-2xl cursor-pointer" data-doc="${id}" data-rating="${i}">★</span>`).join('')}
           </div>
-        ;
+        `;
         div.addEventListener('click', () => openEditModal(id, data));
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
@@ -126,12 +151,14 @@
       });
     }
 
+    // Sort Toggle
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
+      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
       renderList();
     });
 
+    // Search Dropdown
     searchBar.addEventListener('input', () => {
       const val = searchBar.value.toLowerCase();
       dropdown.innerHTML = '';
@@ -141,21 +168,13 @@
         const li = document.createElement('li');
         li.className = 'p-2 hover:bg-gray-600 cursor-pointer';
         li.textContent = data.name;
-        li.onclick = () => window.open(/notepad.html?strain=${encodeURIComponent(data.name)}, '_blank');
+        li.onclick = () => window.open(`/notepad.html?strain=${encodeURIComponent(data.name)}`, '_blank');
         dropdown.appendChild(li);
       });
       dropdown.classList.toggle('hidden', matches.length === 0);
     });
 
-    const editModal = document.getElementById('edit-modal');
-    const editName = document.getElementById('edit-name');
-    const editType = document.getElementById('edit-type');
-    const editDescription = document.getElementById('edit-description');
-    const editNotes = document.getElementById('edit-notes');
-    const editStars = document.getElementById('edit-stars');
-    let currentId = null;
-    let currentRating = 0;
-
+    // Edit Modal Logic
     function openEditModal(id, data) {
       currentId = id;
       editName.value = data.name;
