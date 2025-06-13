@@ -21,13 +21,12 @@
     <label class="block mb-2">Strain Name:</label>
     <input type="text" id="name" required class="w-full p-2 rounded bg-gray-700 text-white mb-2" placeholder="Strain Name" />
 
-    <div class="flex items-center mb-4 space-x-2">
-      <button type="button" id="lookup-leafly" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Leafly 🔍</button>
-      <button type="button" id="lookup-seedsman" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-black font-semibold">Seedsman 🔍</button>
+    <!-- Type Selection (Indica, Sativa, Hybrid buttons) -->
+    <div class="flex space-x-4 mb-4">
+      <button type="button" id="indica-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Indica</button>
+      <button type="button" id="sativa-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Sativa</button>
+      <button type="button" id="hybrid-btn" class="type-btn bg-gray-600 hover:bg-green-500 text-white px-4 py-2 rounded">Hybrid</button>
     </div>
-
-    <label class="block mb-2">Type (Indica, Sativa, Hybrid):</label>
-    <input type="text" id="type" required class="w-full p-2 rounded bg-gray-700 mb-4" />
 
     <label class="block mb-2">Description:</label>
     <textarea id="description" required class="w-full p-2 rounded bg-gray-700 mb-4" rows="3"></textarea>
@@ -111,8 +110,12 @@
     const detailsStrainName = document.getElementById('details-strain-name');
     const detailsGrowKnowledge = document.getElementById('details-grow-knowledge');
     const filterTypeSelect = document.getElementById('filter-type');
+    const indicaBtn = document.getElementById('indica-btn');
+    const sativaBtn = document.getElementById('sativa-btn');
+    const hybridBtn = document.getElementById('hybrid-btn');
     let ascending = true;
     let strains = [];
+    let selectedType = '';
 
     db.collection('strains').onSnapshot(snapshot => {
       strains = [];
@@ -123,9 +126,8 @@
     function renderList() {
       list.innerHTML = '';
       const filteredStrains = strains.filter(({ data }) => {
-        const filterType = filterTypeSelect.value;
-        if (!filterType) return true; // No filter, show all
-        return data.type === filterType;
+        if (!selectedType) return true; // No filter, show all
+        return data.type === selectedType;
       });
 
       const sorted = filteredStrains.sort((a, b) =>
@@ -201,20 +203,11 @@
 
     function getStrainData(name) {
       const strainKnowledge = {
-        // Old strains
-        "Purple Haze": "Genetics: Sativa-dominant hybrid (Haze x Purple Thai), Flowering Time: 9 weeks, Yield: Indoor: 350–450g/m², Outdoor: up to 14 oz/plant.",
-        "Pineapple Bang": "Genetics: Hybrid (Pineapple Fruz x Wild Cherry), Climate: Thrives in warm, sunny environments, Training Tips: Utilize pruning and LST.",
-        "Sweet Tooth": "Genetics: Indica-dominant hybrid (70% Indica), Flowering Time: 8–9 weeks, Yield: Indoor: 400–500g/m², Outdoor: 450–550g/plant, Training Tips: Prune dense foliage.",
-        "Red Diesel": "Genetics: 50% Sativa, 50% Indica (Californian Orange x NYC Diesel), Flowering Time: 60–65 days, Yield: Indoor: up to 600g/m², Outdoor: up to 600g/plant, Climate: Prefers warm climates.",
-        "Witches Wedding": "Genetics: Limited Edition, Flowering Time: 8–9 weeks indoors, Yield: Indoor: up to 600g/m², Outdoor: 1000g/plant, Training Tips: Use topping and LST.",
-        "Amnesia Lemon": "Genetics: Sativa-dominant hybrid (Amnesia Haze x Lemon Skunk), Flowering Time: 60–65 days, Yield: Indoor: 550g/m², Outdoor: varies, Climate: Mediterranean-like conditions.",
-
-        // New strains
         "Blue Sunset Sherbet": "Genetics: Indica-dominant hybrid (65% Indica / 35% Sativa), Flowering Time: 59–63 days indoors; harvests in early October outdoors, Indoor Yield: 650–700 g/m², Outdoor Yield: up to 1 kg per plant.",
         "Cookies Kush": "Genetics: Indica-dominant hybrid (70% Indica / 30% Sativa), Flowering Time: 55–60 days indoors; 3rd–4th week of September outdoors, Indoor Yield: up to 650 g/m², Outdoor Yield: up to 1 kg per plant.",
         "OG Kush": "Genetics: Hybrid (55% Sativa / 45% Indica), Flowering Time: 58–70 days indoors, Indoor Yield: 500 g/m², Outdoor Yield: Moderate.",
         "Tangie": "Genetics: Sativa-dominant hybrid, Flowering Time: 9–10 weeks indoors; end of September to October outdoors, Indoor Yield: 450–550 g/m², Outdoor Yield: Medium to high.",
-        "Whale Breath": "Genetics: 60% Indica / 40% Sativa, Flowering Time: 65 days indoors, Indoor Yield: Moderate, Outdoor Yield: up to 750 g per plant."
+        "Whale Breath": "Genetics: 60% Indica / 40% Sativa, Flowering Time: 65 days indoors, Indoor Yield: Moderate, Outdoor Yield: up to 750 g per plant.",
       };
       return {
         name: name,
@@ -229,6 +222,21 @@
       ascending = !ascending;
       sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
       renderList();
+    });
+
+    // Type Button Logic (Indica, Sativa, Hybrid)
+    document.querySelectorAll('.type-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        // Reset all buttons to gray
+        document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('bg-green-500'));
+        
+        // Set clicked button to green
+        button.classList.add('bg-green-500');
+        
+        // Set the selected type
+        selectedType = button.textContent;
+        renderList();
+      });
     });
 
     // Lookup Buttons for Leafly, Seedsman, and Dispensary Locator
