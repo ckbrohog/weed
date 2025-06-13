@@ -47,7 +47,7 @@
     </button>
   </form>
 
-  <!-- Filter and Sort Options (only sorts saved strains) -->
+  <!-- Filter and Sort Options -->
   <div class="flex justify-between items-center mt-6 mb-4">
     <div class="flex space-x-2">
       <label for="filter-type" class="text-sm text-gray-300">Filter by Type:</label>
@@ -221,8 +221,11 @@
       };
     }
 
-    // Listen for filter type change
-    filterTypeSelect.addEventListener('change', renderList);
+    // Listen for filter type change and sort only saved strains
+    filterTypeSelect.addEventListener('change', () => {
+      selectedType = filterTypeSelect.value;
+      renderList();
+    });
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
