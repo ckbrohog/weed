@@ -88,16 +88,16 @@
         const { name, type, description, rating = 0 } = doc.data();
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition';
-        div.innerHTML = 
+        div.innerHTML = `
           <h3 class="text-xl font-bold text-green-400">${name}</h3>
           <p class="italic text-sm text-gray-300">${type}</p>
           <p class="mt-2 text-white">${description}</p>
           <div class="flex space-x-1 mt-2">
-            ${[1, 2, 3, 4, 5].map(i => 
+            ${[1, 2, 3, 4, 5].map(i => `
               <span class="star text-2xl cursor-pointer" data-doc="${doc.id}" data-rating="${i}">★</span>
-            ).join('')}
+            `).join('')}
           </div>
-        ;
+        `;
         const stars = div.querySelectorAll('.star');
         stars.forEach(star => {
           const r = parseInt(star.dataset.rating);
@@ -167,7 +167,7 @@
         alert('Please enter a strain name to lookup.');
         return;
       }
-      const url = https://www.leafly.com/search?q=${encodeURIComponent(query)};
+      const url = `https://www.leafly.com/search?q=${encodeURIComponent(query)}`;
       window.open(url, '_blank');
     });
 
@@ -177,7 +177,7 @@
         alert('Please enter a strain name to lookup.');
         return;
       }
-      const url = https://www.seedsman.com/search?query=${encodeURIComponent(query)};
+      const url = `https://www.seedsman.com/search?query=${encodeURIComponent(query)}`;
       window.open(url, '_blank');
     });
   </script>
