@@ -161,7 +161,7 @@
           <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
           <p class="italic text-sm text-gray-300">${data.type}</p>
           <p class="mt-2 text-white">${data.description}</p>
-          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+          
           <div class="flex items-center space-x-2 mt-2">
   <div class="flex items-center space-x-2 mt-2">
   <div class="flex space-x-1">
@@ -174,10 +174,14 @@
   <span class="text-sm text-gray-300">Avg: ${calculateAverage(data.ratings || {})}</span>
 
 
-          <div class="flex space-x-2 mt-3">
-            <button onclick="alert('Notes: ${data.notes || 'None'}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">📝 Notes</button>
-            <button onclick="alert('Description: ${data.description}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">ℹ️ Details</button>
-          </div>
+          <div class="mt-2">
+  <textarea placeholder="Leave your review..." class="review-input w-full p-2 rounded bg-gray-700 text-white mb-1" data-id="${id}">${data.reviews?.[localStorage.getItem('currentUser')] || ''}</textarea>
+  <button class="save-review bg-green-600 text-black px-2 py-1 rounded text-sm hover:bg-green-500" data-id="${id}">💾 Save Review</button>
+</div>
+<div class="mt-1 text-sm text-gray-300">
+  ${Object.entries(data.reviews || {}).map(([user, review]) => `<p><strong>${user}:</strong> ${review}</p>`).join('')}
+</div>
+
         `;
 
         div.querySelectorAll('.star').forEach(star => {
@@ -199,6 +203,21 @@
 
     setTimeout(() => star.classList.remove('twirl'), 600);
   });
+});
+div.querySelector('.save-review')?.addEventListener('click', async () => {
+  const user = localStorage.getItem('currentUser');
+  if (!user) return alert('You must be logged in to review.');
+
+  const textarea = div.querySelector('.review-input');
+  const reviewText = textarea.value.trim();
+
+  const strainRef = db.collection('strains').doc(id);
+  const doc = await strainRef.get();
+  const data = doc.data();
+  const reviews = data.reviews || {};
+
+  reviews[user] = reviewText;
+  await strainRef.update({ reviews });
 });
 
 
