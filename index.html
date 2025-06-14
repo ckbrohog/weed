@@ -50,21 +50,7 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
-  <div id="login-screen" class="flex items-center justify-center min-h-screen">
-  <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
-    <div class="flex justify-center mb-4">
-      <img src="logo.png" alt="CannaTracker Logo" class="h-32">
-    </div>
-    <h2 class="text-2xl font-bold mb-4 text-center">Login to CannaTracker</h2>
 
-      <input id="login-name" type="text" placeholder="Name" class="w-full p-2 mb-4 rounded bg-gray-700 text-white" />
-      <input id="login-password" type="password" placeholder="Password" class="w-full p-2 mb-4 rounded bg-gray-700 text-white" />
-      <button id="login-btn" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Login</button>
-      <p id="login-error" class="text-red-500 text-sm mt-3 hidden">Invalid login. Try again.</p>
-    </div>
-  </div>
-
-  <div id="app" class="hidden">
   <div class="flex justify-center mb-8">
   <img src="logo.png" alt="CannaTracker Logo" class="h-60">
 </div>
@@ -96,7 +82,9 @@
 
     <button type="submit" class="bg-green-500 hover:bg-green-600 text-black font-bold w-full py-2 rounded">Add Strain</button>
 
-    
+    <button id="find-near-me" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4 w-full">
+      📍 Find Dispensaries Near Me
+    </button>
   </form>
 
   <div class="flex justify-between items-center mt-6 mb-4">
@@ -143,15 +131,12 @@
     let strains = [];
 
     db.collection('strains').onSnapshot(snapshot => {
-      console.log("📦 Firestore snapshot received:", snapshot.size, "documents");
       strains = [];
       snapshot.forEach(doc => strains.push({ id: doc.id, data: doc.data() }));
       renderList();
     });
 
     function renderList() {
-      console.log("🔄 renderList triggered");
-      console.log("Current user:", localStorage.getItem('currentUser'));
       list.innerHTML = '';
       const filtered = strains.filter(({ data }) => !selectedType || data.type === selectedType);
       const sorted = filtered.sort((a, b) =>
@@ -161,28 +146,31 @@
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
-       div.innerHTML = `').forEach(star => {
-  const rating = parseInt(star.dataset.rating);
-  star.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    star.classList.add('twirl');
+        div.innerHTML = 
+          ${data.imageUrl ? <img src="${data.imageUrl}" class="w-full max-h-48 object-cover mb-2 rounded"> : ''}
+          <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+          <p class="italic text-sm text-gray-300">${data.type}</p>
+          <p class="mt-2 text-white">${data.description}</p>
+          <p class="mt-2 text-sm italic text-gray-400">${data.notes || ''}</p>
+          <div class="flex space-x-1 mt-2">
+            ${[1,2,3,4,5].map(i => <span class="star text-2xl cursor-pointer" data-id="${id}" data-rating="${i}">★</span>).join('')}
+          </div>
+          <div class="flex space-x-2 mt-3">
+            <button onclick="alert('Notes: ${data.notes || 'None'}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">📝 Notes</button>
+            <button onclick="alert('Description: ${data.description}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">ℹ️ Details</button>
+          </div>
+        ;
 
-    const user = localStorage.getItem('currentUser');
-    if (!user) return alert('You must be logged in.');
-
-    const strainRef = db.collection('strains').doc(id);
-    const doc = await strainRef.get();
-    const strainData = doc.data();
-    const ratings = strainData.ratings || {};
-    ratings[user] = rating;
-
-    await strainRef.update({ ratings });
-        renderList();
-
-    setTimeout(() => star.classList.remove('twirl'), 600);
-  });
-});
-
+        div.querySelectorAll('.star').forEach(star => {
+          const rating = parseInt(star.dataset.rating);
+          if (rating <= data.rating) star.style.color = 'gold';
+          star.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            star.classList.add('twirl');
+            await db.collection('strains').doc(id).update({ rating });
+            setTimeout(() => star.classList.remove('twirl'), 600);
+          });
+        });
 
         list.appendChild(div);
       });
@@ -190,7 +178,7 @@
 
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
-      sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
+      sortButton.textContent = Sort: ${ascending ? 'A–Z' : 'Z–A'};
       renderList();
     });
 
@@ -294,96 +282,5 @@
       }
     });
   </script>
-  <script>
-  const USERS = [
-  { name: "colton", password: "420pass" },
-  { name: "admin", password: "admin123" },
-  { name: "tester1", password: "testme" },
-  { name: "grower", password: "greenthumb" },
-  { name: "stoner", password: "letmein" },
-  { name: "ry", password: "12345" }
-  ];
-
-  document.getElementById('login-btn').addEventListener('click', () => {
-    const name = document.getElementById('login-name').value.trim().toLowerCase();
-    const password = document.getElementById('login-password').value;
-
-    const user = USERS.find(u => u.name === name && u.password === password);
-
-    if (user) {
-      console.log("✅ Logged in as:", user.name);
-      localStorage.setItem('currentUser', user.name);
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-    } else {
-      document.getElementById('login-error').classList.remove('hidden');
-    }
-  });
-    function calculateAverage(ratings) {
-  const values = Object.values(ratings);
-  if (values.length === 0) return '0.0';
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  return avg.toFixed(1);
-}
-
-</script>
-      </div> <!-- closes #app -->
-
-<script>
-function calculateAverage(ratings) {
-  const values = Object.values(ratings || {});
-  if (values.length === 0) return '0.0';
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  return avg.toFixed(1);
-}
-
-function renderList() {
-  list.innerHTML = '';
-  const filtered = strains.filter(({ data }) => !selectedType || data.type === selectedType);
-  const sorted = filtered.sort((a, b) =>
-    ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
-  );
-
-  sorted.forEach(({ id, data }) => {
-    const user = localStorage.getItem('currentUser');
-    const userRating = data.ratings?.[user] || 0;
-
-    const div = document.createElement('div');
-    div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
-
-    div.innerHTML = `').forEach(star => {
-      const rating = parseInt(star.dataset.rating);
-      star.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        star.classList.add('twirl');
-        const user = localStorage.getItem('currentUser');
-        if (!user) return alert('Please log in first.');
-        const strainRef = db.collection('strains').doc(id);
-        const doc = await strainRef.get();
-        const ratings = doc.data().ratings || {};
-        ratings[user] = rating;
-        await strainRef.update({ ratings });
-        renderList();
-        setTimeout(() => star.classList.remove('twirl'), 600);
-      });
-    });
-
-    list.appendChild(div);
-  });
-}
-
-document.getElementById('lookup-leafly').addEventListener('click', () => {
-  const query = nameInput.value.trim();
-  if (!query) return alert('Enter a strain name to look up.');
-  window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
-});
-
-document.getElementById('lookup-seedsman').addEventListener('click', () => {
-  const query = nameInput.value.trim();
-  if (!query) return alert('Enter a strain name to look up.');
-  window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
-});
-</script>
-
 </body>
 </html>
