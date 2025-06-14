@@ -47,6 +47,35 @@
       0% { transform: rotate(0deg); color: black; }
       100% { transform: rotate(360deg); color: gold; }
     }
+    .flip-card {
+  perspective: 1000px;
+  margin-bottom: 1rem;
+}
+.flip-inner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+}
+.flip-card.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+.flip-front,
+.flip-back {
+  backface-visibility: hidden;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+.flip-front {
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen px-4 py-8">
@@ -159,23 +188,37 @@
 
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
-        div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
-        div.innerHTML = `
-          ${data.imageUrl ? `<img src="${data.imageUrl}" class="w-full max-h-48 object-cover mb-2 rounded">` : ''}
-          <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
-          <p class="italic text-sm text-gray-300">${data.type}</p>
-          <p class="mt-2 text-white">${data.description}</p>
-          
-          <div class="flex items-center space-x-2 mt-2">
-  <div class="flex items-center space-x-2 mt-2">
-  <div class="flex space-x-1">
-    ${[1,2,3,4,5].map(i => {
-      const user = localStorage.getItem('currentUser');
-      const userRating = data.ratings?.[user] || 0;
-      return `<span class="star text-2xl cursor-pointer" data-id="${id}" data-rating="${i}" style="color:${i <= userRating ? 'gold' : 'white'}">★</span>`;
-    }).join('')}
+div.innerHTML = `
+  <div class="flip-card">
+    <div class="flip-inner">
+      <div class="flip-front bg-gray-700 p-4 rounded hover:bg-gray-600 transition">
+        ${data.imageUrl ? `<img src="${data.imageUrl}" class="w-full max-h-48 object-cover mb-2 rounded">` : ''}
+        <h3 class="text-xl font-bold text-green-400">${data.name}</h3>
+        <p class="italic text-sm text-gray-300">${data.type}</p>
+        <p class="mt-2 text-white">${data.description}</p>
+        <div class="flex items-center space-x-2 mt-2">
+          <div class="flex space-x-1">
+            ${[1,2,3,4,5].map(i => {
+              const user = localStorage.getItem('currentUser');
+              const userRating = data.ratings?.[user] || 0;
+              return `<span class="star text-2xl cursor-pointer" data-id="${id}" data-rating="${i}" style="color:${i <= userRating ? 'gold' : 'white'}">★</span>`;
+            }).join('')}
+          </div>
+          <span class="text-sm text-gray-300">Avg: ${calculateAverage(data.ratings || {})}</span>
+        </div>
+        <button class="flip-button mt-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">📝 Reviews</button>
+      </div>
+      <div class="flip-back bg-gray-700 p-4 rounded text-white">
+        <h4 class="text-lg font-bold mb-2">User Reviews</h4>
+        <p>${(data.reviews && data.reviews[localStorage.getItem('currentUser')]) || "No review yet."}</p>
+        <textarea id="review-${id}" class="w-full p-2 mt-2 rounded bg-gray-600 text-white" rows="3" placeholder="Write your review..."></textarea>
+        <button class="save-review mt-2 bg-green-500 hover:bg-green-600 text-black px-3 py-1 rounded text-sm" data-id="${id}">💾 Save Review</button>
+        <button class="flip-back-button mt-2 bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">🔙 Back</button>
+      </div>
+    </div>
   </div>
-  <span class="text-sm text-gray-300">Avg: ${calculateAverage(data.ratings || {})}</span>
+`;
+
 
 
           <div class="mt-2">
@@ -228,7 +271,40 @@ div.querySelector('.save-review')?.addEventListener('click', async () => {
         list.appendChild(div);
       });
     }
+// --- Flip and Review Handler ---
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('flip-button')) {
+    const card = e.target.closest('.flip-card');
+    card.classList.toggle('flipped');
+  }
 
+  if (e.target.classList.contains('save-review')) {
+    const card = e.target.closest('.flip-card');
+    const strainId = e.target.dataset.id;
+    const textarea = card.querySelector(`#review-${strainId}`);
+    const review = textarea.value.trim();
+    const user = localStorage.getItem('currentUser');
+
+    if (!review) return alert('Write something first!');
+    if (!user) return alert('Login required.');
+
+    const strainRef = db.collection('strains').doc(strainId);
+    const doc = await strainRef.get();
+    const data = doc.data();
+    const reviews = data.reviews || {};
+    reviews[user] = review;
+
+    await strainRef.update({ reviews });
+
+    textarea.value = '';
+    alert('Review saved!');
+  }
+
+  if (e.target.classList.contains('flip-back-button')) {
+    const card = e.target.closest('.flip-card');
+    card.classList.remove('flipped');
+  }
+});
     sortButton.addEventListener('click', () => {
       ascending = !ascending;
       sortButton.textContent = `Sort: ${ascending ? 'A–Z' : 'Z–A'}`;
