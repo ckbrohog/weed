@@ -172,9 +172,7 @@
     }).join('')}
   </div>
   <span class="text-sm text-gray-300">Avg: ${calculateAverage(data.ratings || {})}</span>
-</div>
-  <span class="text-sm text-gray-300" id="avg-${id}">Avg: ${data.averageRating ? data.averageRating.toFixed(1) : "--"}</span>
-</div>
+
 
           <div class="flex space-x-2 mt-3">
             <button onclick="alert('Notes: ${data.notes || 'None'}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-500">📝 Notes</button>
