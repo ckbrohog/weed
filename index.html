@@ -161,9 +161,7 @@
       sorted.forEach(({ id, data }) => {
         const div = document.createElement('div');
         div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
-       div.innerHTML = `
-  ${data.imageUrl ? `<img src="${data.imageUrl}" class="w-full max-h-48 object-cover mb-2 rounded">` : ''}
-  div.querySelectorAll('.star').forEach(star => {
+       div.innerHTML = `').forEach(star => {
   const rating = parseInt(star.dataset.rating);
   star.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -179,6 +177,7 @@
     ratings[user] = rating;
 
     await strainRef.update({ ratings });
+        renderList();
 
     setTimeout(() => star.classList.remove('twirl'), 600);
   });
@@ -212,7 +211,7 @@
       if (!name || !type || !description) return alert('Fill out all required fields.');
 
       if (imageFile) {
-        const storageRef = storage.ref(`strain-images/${Date.now()}_${imageFile.name}`);
+        const storageRef = storage.ref(strain-images/${Date.now()}_${imageFile.name});
         await storageRef.put(imageFile);
         imageUrl = await storageRef.getDownloadURL();
       }
@@ -240,16 +239,17 @@
     document.getElementById('lookup-leafly').addEventListener('click', () => {
       const query = nameInput.value.trim();
       if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, \'_blank\');
+      window.open(https://www.leafly.com/search?q=${encodeURIComponent(query)}, '_blank');
     });
 
     document.getElementById('lookup-seedsman').addEventListener('click', () => {
       const query = nameInput.value.trim();
       if (!query) return alert('Enter a strain name to look up.');
-      window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, \'_blank\');
+      window.open(https://www.seedsman.com/search?query=${encodeURIComponent(query)}, '_blank');
     });
 
-    
+    document.getElementById('find-near-me').addEventListener('click', () => {
+      window.open('https://www.google.com/maps/search/weed+dispensaries+near+me', '_blank');
     });
 
     document.querySelectorAll('.type-btn').forEach(btn => {
@@ -329,7 +329,61 @@
 </script>
       </div> <!-- closes #app -->
 
+<script>
+function calculateAverage(ratings) {
+  const values = Object.values(ratings || {});
+  if (values.length === 0) return '0.0';
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  return avg.toFixed(1);
+}
 
+function renderList() {
+  list.innerHTML = '';
+  const filtered = strains.filter(({ data }) => !selectedType || data.type === selectedType);
+  const sorted = filtered.sort((a, b) =>
+    ascending ? a.data.name.localeCompare(b.data.name) : b.data.name.localeCompare(a.data.name)
+  );
+
+  sorted.forEach(({ id, data }) => {
+    const user = localStorage.getItem('currentUser');
+    const userRating = data.ratings?.[user] || 0;
+
+    const div = document.createElement('div');
+    div.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 transition';
+
+    div.innerHTML = `').forEach(star => {
+      const rating = parseInt(star.dataset.rating);
+      star.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        star.classList.add('twirl');
+        const user = localStorage.getItem('currentUser');
+        if (!user) return alert('Please log in first.');
+        const strainRef = db.collection('strains').doc(id);
+        const doc = await strainRef.get();
+        const ratings = doc.data().ratings || {};
+        ratings[user] = rating;
+        await strainRef.update({ ratings });
+        renderList();
+        setTimeout(() => star.classList.remove('twirl'), 600);
+      });
+    });
+
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('lookup-leafly').addEventListener('click', () => {
+  const query = nameInput.value.trim();
+  if (!query) return alert('Enter a strain name to look up.');
+  window.open(`https://www.leafly.com/search?q=${encodeURIComponent(query)}`, '_blank');
+});
+
+document.getElementById('lookup-seedsman').addEventListener('click', () => {
+  const query = nameInput.value.trim();
+  if (!query) return alert('Enter a strain name to look up.');
+  window.open(`https://www.seedsman.com/search?query=${encodeURIComponent(query)}`, '_blank');
+});
+</script>
 
 </body>
 </html>
